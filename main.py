@@ -38,8 +38,7 @@ def refreshToken():
     print(r.text[:300] + '...')
     token = 'Bearer ' + r.json()['access_token']
 
-if platform == 'win':
-    refreshToken()
+refreshToken()
 
 # Declare screens
 class HomeScreen(Screen):
@@ -155,6 +154,8 @@ class HomeScreen(Screen):
         def thread():
             #Toggle Playback state
             r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+            print(r.status_code, r.reason)
+            print(r.text[:300] + '...')
             if(r.status_code == 401):
                 refreshToken()
                 return
