@@ -29,12 +29,14 @@ for line in lines:
 print (lines[0])
 
 sBasic = lines[0]
-print (sBasic)
+
 sRefreshToken = lines[1]
 triggerToken = lines[2]
 
 if platform == 'linux':
-    sBasic = sBasic[:-3]
+    sBasic = sBasic[:-2]
+
+print (sBasic)
 
 r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
 print(r.status_code, r.reason)
