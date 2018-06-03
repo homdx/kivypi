@@ -22,8 +22,10 @@ filename = "spot.txt"
 lines = [line.rstrip('\n') for line in open(filename)]
 #print (lines)
 
+print (lines[0])
 for line in lines:
     line.replace('\r', '')
+print (lines[0])
 
 sBasic = lines[0]
 sRefreshToken = lines[1]
