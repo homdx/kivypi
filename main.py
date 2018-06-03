@@ -9,6 +9,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.utils import platform
 
 #readFile(filename)
 
@@ -31,6 +32,9 @@ sBasic = lines[0]
 print (sBasic)
 sRefreshToken = lines[1]
 triggerToken = lines[2]
+
+if platform == 'linux':
+    sBasic = sBasic[:-3]
 
 r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
 print(r.status_code, r.reason)
