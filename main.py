@@ -23,34 +23,23 @@ filename = "spot.txt"
 lines = [line.rstrip('\n') for line in open(filename)]
 #print (lines)
 
-print (lines[0])
-for line in lines:
-    line.replace('\r', '')
-print (lines[0])
-
 sBasic = lines[0]
-
 sRefreshToken = lines[1]
 triggerToken = lines[2]
 
-if platform == 'linux':
-    sBasic = sBasic[:-1]
-
 print (sBasic)
 
-r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
-print(r.status_code, r.reason)
-print(r.text[:300] + '...')
-token = 'Bearer ' + r.json()['access_token']
+token = ''
 
 def refreshToken():
     global token
     r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
     print(r.status_code, r.reason)
     print(r.text[:300] + '...')
-    token = 'Bearer ' + r.json()['access_token']   
+    token = 'Bearer ' + r.json()['access_token']
 
-#refreshToken()
+if platform == 'win':
+    refreshToken()
 
 # Declare screens
 class HomeScreen(Screen):
