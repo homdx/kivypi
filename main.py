@@ -9,6 +9,7 @@ from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.gridlayout import GridLayout
+from kivy.utils import platform
 
 #readFile(filename)
 
@@ -18,7 +19,15 @@ from kivy.uix.gridlayout import GridLayout
 Builder.load_file('main.kv')
 
 filename = "spot.txt"
-lines = [line.rstrip('\n') for line in open(filename)]
+
+print (platform)
+if platform == 'linux':
+    lines = [line.rstrip('\r') for line in open(filename)]
+elif platform == 'win':
+    lines = [line.rstrip('\n') for line in open(filename)]
+else:
+    raise Exception('Unsupported/untested platform.')
+
 print (lines)
 sBasic = lines[0]
 sRefreshToken = lines[1]
