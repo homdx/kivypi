@@ -15,7 +15,7 @@ from kivy.uix.gridlayout import GridLayout
 # Create both screens. Please note the root.manager.current: this is how
 # you can control the ScreenManager from kv. Each screen has by default a
 # property manager that gives you the instance of the ScreenManager used.
-Builder.load_file('main.kv')
+Builder.load_file('main2.kv')
 
 filename = "spot.txt"
 lines = [line.rstrip('\n') for line in open(filename)]
@@ -236,78 +236,9 @@ class HomeScreen(Screen):
         webbrowser.open('https://anytrip.com.au/stop/au2:206020')
     pass
 
-class HomeScreen2(Screen):
-
-    def btn_exit(self):
-        App.get_running_app().stop()
-
-    def btn_considerPlaylist(self):
-        def thread():
-            #Play consider playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:32AqjHtK9ofJcwuhWBot01'}
-            r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            if(r.status_code == 401):
-                refreshToken()
-                return
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-
-    def btn_discoverWeeklyPlaylist(self):
-        def thread():
-            #Play discoverWeekly playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:37i9dQZEVXcWS97182mQq0'}
-            r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            if(r.status_code == 401):
-                refreshToken()
-                return
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})    
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-   
-    def btn_tableTopPlaylist(self):
-        def thread():
-            #Play discoverWeekly playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:28uPKzcnErsq2OMG7EvqrG'}
-            r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            if(r.status_code == 401):
-                refreshToken()
-                return
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-
-    def btn_slack(self):
-        #IFTTT Post to Slack
-        r = requests.post("https://maker.ifttt.com/trigger/post_to_slack/with/key/UcYrm-X3zGUSSCqyH8UVl")
-        print(r.status_code, r.reason)
-        print(r.text[:300] + '...')
-
-    pass
-
-class LockScreen(Screen):
-    def btn_checkInput(self, input):
-        if input == '4444':
-            print('test')
-            sm.current = 'home'
-        self.display.text = ''
-
-    pass
-
 # Create the screen manager
 sm = ScreenManager()
-sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
-sm.add_widget(HomeScreen2(name='home2'))
 
 class TestApp(App):
 
