@@ -34,7 +34,7 @@ sRefreshToken = lines[1]
 triggerToken = lines[2]
 
 if platform == 'linux':
-    sBasic = sBasic[:-2]
+    sBasic = sBasic[:-1]
 
 print (sBasic)
 
