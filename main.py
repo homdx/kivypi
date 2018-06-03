@@ -28,10 +28,14 @@ for line in lines:
 print (lines[0])
 
 sBasic = lines[0]
+print (sBasic)
 sRefreshToken = lines[1]
 triggerToken = lines[2]
 
-token = ''
+r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
+print(r.status_code, r.reason)
+print(r.text[:300] + '...')
+token = 'Bearer ' + r.json()['access_token']
 
 def refreshToken():
     global token
@@ -40,7 +44,7 @@ def refreshToken():
     print(r.text[:300] + '...')
     token = 'Bearer ' + r.json()['access_token']   
 
-refreshToken()
+#refreshToken()
 
 # Declare screens
 class HomeScreen(Screen):
