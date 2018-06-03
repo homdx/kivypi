@@ -20,7 +20,12 @@ Builder.load_file('main.kv')
 
 filename = "spot.txt"
 
-lines = [line.rstrip('\n') for line in open(filename)]
+with open(filename) as f:
+    lines = f.readlines()
+# you may also want to remove whitespace characters like `\n` at the end of each line
+lines = [x.strip() for x in lines] 
+
+#lines = [line.rstrip('\n') for line in open(filename)]
 #print (lines)
 
 sBasic = lines[0]
@@ -33,7 +38,7 @@ token = ''
 
 def refreshToken():
     global token
-    r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': 'Basic ZmQzNGVhMjY1YTQ2NDJiYmJlZGNmNDUyZWM1ZmU1NDU6ODQ1MDE4NGMwMzExNDY0ZTllZDg2NDVhOTk0YzM3NGE'}, data={'grant_type': 'refresh_token', 'refresh_token': 'AQA-EqTM-Y--kZPkUWCV8sW3PDdV5GSEtL6G1IIQn2saVYKnUNq1MKck0JLL76kP1b5iW27vO0eOoRr_CToZumPJe_h0xwa0-8SflpKi8AfoA4lEOusOFr6eJAFqnNDrIfs'})
+    r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
     print(r.status_code, r.reason)
     print(r.text[:300] + '...')
     token = 'Bearer ' + r.json()['access_token']
@@ -154,8 +159,6 @@ class HomeScreen(Screen):
         def thread():
             #Toggle Playback state
             r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')
             if(r.status_code == 401):
                 refreshToken()
                 return
@@ -234,11 +237,6 @@ class HomeScreen(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
-    def btn_LockPC(self):
-        r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=Lock&computer=NickDesktop", data={'token': triggerToken})
-        print(r.status_code, r.reason)
-        print(r.text[:300] + '...')
-
     def btn_trainTimetable(self):
         webbrowser.open('https://anytrip.com.au/stop/au2:206020')
     pass
@@ -296,6 +294,11 @@ class HomeScreen2(Screen):
     def btn_slack(self):
         #IFTTT Post to Slack
         r = requests.post("https://maker.ifttt.com/trigger/post_to_slack/with/key/UcYrm-X3zGUSSCqyH8UVl")
+        print(r.status_code, r.reason)
+        print(r.text[:300] + '...')
+
+    def btn_LockPC(self):
+        r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=Lock&computer=NickDesktop", data={'token': triggerToken})
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
