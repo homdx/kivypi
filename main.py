@@ -33,7 +33,7 @@ token = ''
 
 def refreshToken():
     global token
-    r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
+    r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': 'Basic ZmQzNGVhMjY1YTQ2NDJiYmJlZGNmNDUyZWM1ZmU1NDU6ODQ1MDE4NGMwMzExNDY0ZTllZDg2NDVhOTk0YzM3NGE'}, data={'grant_type': 'refresh_token', 'refresh_token': 'AQA-EqTM-Y--kZPkUWCV8sW3PDdV5GSEtL6G1IIQn2saVYKnUNq1MKck0JLL76kP1b5iW27vO0eOoRr_CToZumPJe_h0xwa0-8SflpKi8AfoA4lEOusOFr6eJAFqnNDrIfs'})
     print(r.status_code, r.reason)
     print(r.text[:300] + '...')
     token = 'Bearer ' + r.json()['access_token']
