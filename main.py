@@ -20,6 +20,9 @@ Builder.load_file('main.kv')
 
 filename = "spot.txt"
 
+if platform == 'linux':
+    filename = '/home/pi/kivypi/spot.txt'
+
 with open(filename) as f:
     lines = f.readlines()
 # you may also want to remove whitespace characters like `\n` at the end of each line
@@ -297,7 +300,7 @@ class HomeScreen2(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
-    def btn_LockPC(self):
+    def btn_lockPC(self):
         r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=Lock&computer=NickDesktop", data={'token': triggerToken})
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
