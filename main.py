@@ -8,6 +8,7 @@ from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.stacklayout import StackLayout
+from kivy.uix.gridlayout import GridLayout
 
 #readFile(filename)
 
@@ -34,8 +35,8 @@ def refreshToken():
 
 refreshToken()
 
-# Declare both screens
-class MenuScreen(Screen):
+# Declare screens
+class HomeScreen(Screen):
 
     def btn_skip(self):
         def thread():
@@ -226,11 +227,16 @@ class MenuScreen(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
+    def btn_pauseCast(self):
+        r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=Lock&computer=NickDesktop", data={'token': triggerToken})
+        print(r.status_code, r.reason)
+        print(r.text[:300] + '...')
+
     def btn_trainTimetable(self):
         webbrowser.open('https://anytrip.com.au/stop/au2:206020')
     pass
 
-class SettingsScreen(Screen):
+class HomeScreen2(Screen):
 
     def btn_exit(self):
         App.get_running_app().stop()
@@ -288,10 +294,20 @@ class SettingsScreen(Screen):
 
     pass
 
+class LockScreen(Screen):
+    def btn_checkInput(self, input):
+        if input == '4444':
+            print('test')
+            sm.current = 'home'
+        self.display.text = ''
+
+    pass
+
 # Create the screen manager
 sm = ScreenManager()
-sm.add_widget(MenuScreen(name='menu'))
-sm.add_widget(SettingsScreen(name='settings'))
+sm.add_widget(LockScreen(name='lock'))
+sm.add_widget(HomeScreen(name='home'))
+sm.add_widget(HomeScreen2(name='home2'))
 
 class TestApp(App):
 

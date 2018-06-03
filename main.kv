@@ -1,4 +1,4 @@
-<MenuScreen>:
+<HomeScreen>:
     StackLayout:
         orientation: "lr-tb"
         spacing: 10
@@ -115,17 +115,17 @@
             width: 147.5
             on_press: root.btn_addCurrentPlaying();
         Button:
-            text: "Page 2"
+            text: "Home Page 2"
             size_hint: None, .235
             width: 147.5
-            on_press: root.manager.current = 'settings'
+            on_press: root.manager.current = 'home2'
         Button:
             text: "Exit"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_exit();
 
-<SettingsScreen>:
+<HomeScreen2>:
     StackLayout:
         orientation: "lr-tb"
         spacing: 10
@@ -212,12 +212,53 @@
             width: 147.5
             on_press: root.btn_slack()
         Button:
-            text: "Page 1"
+            text: "Home Page"
             size_hint: None, .235
             width: 147.5
-            on_press: root.manager.current = 'menu'
+            on_press: root.manager.current = 'home'
         Button:
             text: "Exit"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_exit();
+<LockScreen>:
+    id: calculator
+    display: entry
+    rows: 5
+    padding: 10
+    spacing: 10
+    # Where input is displayed
+    BoxLayout:
+        TextInput:
+            id: entry
+            font_size: 32
+            multiline: False
+    
+    # When buttons are pressed update the entry
+    BoxLayout:
+        spacing: 10
+        Button:
+            text: "1"
+            on_press: entry.text += self.text
+        Button:
+            text: "2"
+            on_press: entry.text += self.text
+        Button:
+            text: "4"
+            on_press: entry.text += self.text
+        Button:
+            text: "Submit"
+            on_press: root.btn_checkInput(entry.text)
+                spacing: 10
+        Button:
+            text: "1"
+            on_press: entry.text += self.text
+        Button:
+            text: "2"
+            on_press: entry.text += self.text
+        Button:
+            text: "4"
+            on_press: entry.text += self.text
+        Button:
+            text: "Submit"
+            on_press: root.btn_checkInput(entry.text)

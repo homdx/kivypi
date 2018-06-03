@@ -4,3 +4,5 @@ ButtonConfig.txt
 ThreadTest.py
 Testing.py
 __pycache__
+calculator.py
+calculator.kv
