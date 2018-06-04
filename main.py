@@ -10,12 +10,13 @@ from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.utils import platform
-
-#readFile(filename)
+from kivy.properties import StringProperty
+from kivy.uix.popup import Popup
 
 # Create both screens. Please note the root.manager.current: this is how
 # you can control the ScreenManager from kv. Each screen has by default a
 # property manager that gives you the instance of the ScreenManager used.
+
 Builder.load_file('main.kv')
 
 filename = "spot.txt"
@@ -25,19 +26,17 @@ if platform == 'linux':
 
 with open(filename) as f:
     lines = f.readlines()
-# you may also want to remove whitespace characters like `\n` at the end of each line
+#remove whitespace characters like `\n` at the end of each line
 lines = [x.strip() for x in lines] 
-
-#lines = [line.rstrip('\n') for line in open(filename)]
-#print (lines)
 
 sBasic = lines[0]
 sRefreshToken = lines[1]
 triggerToken = lines[2]
 
-print (sBasic)
-
 token = ''
+playbackState = ''
+currentVolume = '0'
+running = 1
 
 def refreshToken():
     global token
@@ -46,10 +45,56 @@ def refreshToken():
     print(r.text[:300] + '...')
     token = 'Bearer ' + r.json()['access_token']
 
+def setVolume(volume):
+    r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+    print(r.status_code, r.reason)
+    print(r.text[:300] + '...')
+
+def getVolume():
+    try:
+        global currentVolume
+        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+        device = r.json()['device']
+        currentVolume = str(device['volume_percent'])
+    except:
+        print("Nothing Playing")
+        return
+    
 refreshToken()
+getVolume()
+
+#Loop on seprate thread to refresh token
+def mainThread():
+    #check for playing status every so often?
+    while running:
+        for x in range(0, 600): 
+            if (running):
+                time.sleep( 1 )
+        if (running == 0):
+            break
+        print ("Refreshing Token")
+        refreshToken()
+
+newthread = threading.Thread(target = mainThread)
+newthread.start()
+
+class MyPopup(Popup):
+    def __init__(self,screen,**kwargs):
+        super(MyPopup,self).__init__(**kwargs)
+        self.screen = screen
+    
+    def closeandUpdate(self):
+        self.screen.button_text = self.screen.button_text.split(".")[0]
+        setVolume(self.screen.button_text)
+        self.dismiss()
+
 
 # Declare screens
 class HomeScreen(Screen):
+    button_text = StringProperty(currentVolume)
+    def __init__(self,**kwargs):
+        super(HomeScreen,self).__init__(**kwargs)
+        self.popup = MyPopup(self)
 
     def btn_skip(self):
         def thread():
@@ -58,11 +103,15 @@ class HomeScreen(Screen):
             if(r.status_code == 401):
                 refreshToken()
                 return
-            progress_ms = r.json()['progress_ms']
-            progress_ms += 30000
-            r = requests.put("https://api.spotify.com/v1/me/player/seek?position_ms=" + str(progress_ms), headers={'Authorization': token})
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')
+            try:
+                progress_ms = r.json()['progress_ms']
+                progress_ms += 30000
+                r = requests.put("https://api.spotify.com/v1/me/player/seek?position_ms=" + str(progress_ms), headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
+            except:
+                print("Nothing Playing")
+                return
 
         newthread = threading.Thread(target = thread)
         newthread.start()
@@ -77,7 +126,6 @@ class HomeScreen(Screen):
             #TrackId
             trackId = items['id']
             r = requests.get("https://api.spotify.com/v1/users/t7lfn4yveurkn8fa4hcvhf083/playlists/32AqjHtK9ofJcwuhWBot01", headers={'Authorization': token})
-            #items = r.json()
             #Check track is not already in playlist
             if trackId not in r.text: 
                 print("Adding to Playlist")
@@ -223,6 +271,8 @@ class HomeScreen(Screen):
         print(r.text[:300] + '...')
 
     def btn_exit(self):
+        global running
+        running = 0
         App.get_running_app().stop()
 
     def btn_startCast(self):
@@ -240,15 +290,6 @@ class HomeScreen(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
-    def btn_trainTimetable(self):
-        webbrowser.open('https://anytrip.com.au/stop/au2:206020')
-    pass
-
-class HomeScreen2(Screen):
-
-    def btn_exit(self):
-        App.get_running_app().stop()
-
     def btn_considerPlaylist(self):
         def thread():
             #Play consider playlist
@@ -263,6 +304,17 @@ class HomeScreen2(Screen):
 
         newthread = threading.Thread(target = thread)
         newthread.start()
+
+    def btn_trainTimetable(self):
+        webbrowser.open('https://anytrip.com.au/stop/au2:206020')
+    pass
+
+class HomeScreen2(Screen):
+
+    def btn_exit(self):
+        global running
+        running = 0
+        App.get_running_app().stop()
 
     def btn_discoverWeeklyPlaylist(self):
         def thread():
@@ -307,10 +359,10 @@ class HomeScreen2(Screen):
 
     pass
 
-class LockScreen(Screen):
+class LockScreen(Screen): 
     def btn_checkInput(self, input):
         if input == '4444':
-            print('test')
+            print('Correct')
             sm.current = 'home'
         self.display.text = ''
 
@@ -322,10 +374,10 @@ sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(HomeScreen2(name='home2'))
 
-class TestApp(App):
+class PiDemoApp(App):
 
     def build(self):
         return sm
 
 if __name__ == '__main__':
-    TestApp().run()
+    PiDemoApp().run()
