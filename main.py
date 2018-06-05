@@ -266,35 +266,40 @@ class HomeScreen(Screen):
         newthread.start()
 
     def btn_playTV(self):
-        r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
-        devices = r.json()['devices']
-        for device in devices:
-            if device['name'] == 'TV':
-                id = device['id']
-                found = 'true'
-        if found == 'true':
-            #Neil playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
-            requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            payload = {"device_ids":[id]}
-            requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
-            
-    def btn_playLivHome(self):
-        r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
-        devices = r.json()['devices']
-        for device in devices:
-            if device['name'] == 'Living Room Speaker':
-                id = device['id']
-                found = 'true'
-        if found == 'true':
-            #Neil playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
-            requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            payload = {"device_ids":[id]}
-            requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+        def thread():
+            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+            devices = r.json()['devices']
+            for device in devices:
+                if device['name'] == 'TV':
+                    id = device['id']
+                    found = 'true'
+            if found == 'true':
+                #Neil playlist
+                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+                requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                payload = {"device_ids":[id]}
+                requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+        newthread = threading.Thread(target = thread)
+        newthread.start()        
 
+    def btn_playLivHome(self):
+        def thread():
+            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+            devices = r.json()['devices']
+            for device in devices:
+                if device['name'] == 'Living Room Speaker':
+                    id = device['id']
+                    found = 'true'
+            if found == 'true':
+                #Neil playlist
+                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+                requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                payload = {"device_ids":[id]}
+                requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+        newthread = threading.Thread(target = thread)
+        newthread.start()
         
     def btn_exit(self):
         global running
