@@ -272,14 +272,24 @@ class HomeScreen(Screen):
             for device in devices:
                 if device['name'] == 'TV':
                     id = device['id']
-                    found = 'true'
-            if found == 'true':
+                    print ("found")
+            try:
                 #Neil playlist
-                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
-                requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
                 payload = {"device_ids":[id]}
                 requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
+                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
+            except:
+                print("No device")
+                return
+
         newthread = threading.Thread(target = thread)
         newthread.start()        
 
@@ -290,14 +300,23 @@ class HomeScreen(Screen):
             for device in devices:
                 if device['name'] == 'Living Room Speaker':
                     id = device['id']
-                    found = 'true'
-            if found == 'true':
+            try:
                 #Neil playlist
-                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
-                requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
                 payload = {"device_ids":[id]}
                 requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
+                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
+            except:
+                print("No device")
+                return
+
         newthread = threading.Thread(target = thread)
         newthread.start()
         
