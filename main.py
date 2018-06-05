@@ -266,7 +266,7 @@ class HomeScreen(Screen):
         newthread.start()
 
     def btn_playTV(self):
-        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+        r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
         devices = r.json()['devices']
         for device in devices:
             if device['name'] == 'TV':
@@ -279,9 +279,9 @@ class HomeScreen(Screen):
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             payload = {"device_ids":[id]}
             requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
-
+            
     def btn_playLivHome(self):
-        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+        r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
         devices = r.json()['devices']
         for device in devices:
             if device['name'] == 'Living Room Speaker':
@@ -294,6 +294,7 @@ class HomeScreen(Screen):
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             payload = {"device_ids":[id]}
             requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+
         
     def btn_exit(self):
         global running
