@@ -92,14 +92,15 @@
             width: 147.5
             on_press: root.btn_resumeCast();
         Button:
-            text: "Play in\nLiving Room"
+            text: "Play on TV"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_playLivingRoom();
+            on_press: root.btn_playTV();
         Button:
-            text: "Play on Mini\nWIP"
+            text: "Play on \nHome Speaker"
             size_hint: None, .235
             width: 147.5
+            on_press: root.btn_playLivHome();
         Button:
             text: "Train Timetable\nBrowser Only"
             size_hint: None, .235
@@ -155,15 +156,14 @@
             size_hint: None, .235
             width: 147.5
         Button:
-            text: "Consider Playlist"
-            size_hint: None, .235
-            width: 147.5
-            on_press: root.btn_considerPlaylist()
-        Button:
             text: "Table Top Playlist"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_tableTopPlaylist()
+        Button:
+            text: "TBA"
+            size_hint: None, .235
+            width: 147.5
         Button:
             text: "TBA"
             size_hint: None, .235
