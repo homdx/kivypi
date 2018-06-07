@@ -46,6 +46,11 @@ def refreshToken():
     token = 'Bearer ' + r.json()['access_token']
 
 def setVolume(volume):
+    devicePlaying = getVolume()
+    print (devicePlaying)
+    if (devicePlaying == 'TV'):
+        volume = int(volume) / 5
+    print (volume)
     r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
     print(r.status_code, r.reason)
     print(r.text[:300] + '...')
@@ -54,24 +59,29 @@ def getVolume():
     try:
         global currentVolume
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+        print(r.status_code, r.reason)
         device = r.json()['device']
         currentVolume = str(device['volume_percent'])
+        return device['name']
     except:
         print("Nothing Playing")
         return
     
 refreshToken()
-getVolume()
 
 #Loop on seprate thread to refresh token
 def mainThread():
     #check for playing status every so often?
     while running:
+        if (running == 0):
+            break
         for x in range(0, 600): 
             if (running):
                 time.sleep( 1 )
-        if (running == 0):
-            break
+            else:
+                break
+            #if x % 20 == 0:
+            #    getVolume()
         print ("Refreshing Token")
         refreshToken()
 
@@ -260,6 +270,7 @@ class HomeScreen(Screen):
             if(r.status_code == 401):
                 refreshToken()
                 return
+            time.sleep( 1 )
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
 
         newthread = threading.Thread(target = thread)
@@ -278,14 +289,17 @@ class HomeScreen(Screen):
                 r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
                 print(r.status_code, r.reason)
                 print(r.text[:300] + '...')
-                payload = {"device_ids":[id]}
-                requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
-                print(r.status_code, r.reason)
-                print(r.text[:300] + '...')
+                time.sleep( 1 )
                 payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
                 requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
                 print(r.status_code, r.reason)
                 print(r.text[:300] + '...')
+                time.sleep( 3 )
+                payload = {"device_ids":[id]}
+                requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                print(r.text[:300] + '...')
+
             except:
                 print("No device")
                 return
