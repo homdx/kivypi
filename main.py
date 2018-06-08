@@ -94,8 +94,11 @@ class MyPopup(Popup):
         self.screen = screen
     
     def closeandUpdate(self):
+        def thread():
+            setVolume(self.screen.button_text)
         self.screen.button_text = self.screen.button_text.split(".")[0]
-        setVolume(self.screen.button_text)
+        newthread = threading.Thread(target = thread)
+        newthread.start()
         self.dismiss()
 
 
