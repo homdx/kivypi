@@ -23,6 +23,10 @@ filename = "spot.txt"
 
 if platform == 'linux':
     filename = '/home/pi/kivypi/spot.txt'
+    import git
+    git_dir = "/home/pi/kivypi"
+    g = git.cmd.Git(git_dir)
+    g.pull()
 
 with open(filename) as f:
     lines = f.readlines()
