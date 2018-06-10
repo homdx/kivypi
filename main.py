@@ -39,7 +39,7 @@ triggerToken = lines[2]
 
 token = ''
 playbackState = ''
-currentVolume = '0'
+currentVolume = '50'
 running = 1
 
 def refreshToken():
@@ -72,6 +72,7 @@ def getVolume():
         return
     
 refreshToken()
+getVolume()
 
 #Loop on seprate thread to refresh token
 def mainThread():
