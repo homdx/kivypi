@@ -256,7 +256,17 @@
 
 <MyPopup>:
     BoxLayout:
-        title: "Submit"
+        title: "Submit Volume"
+        orientation: "vertical"
+        Slider:
+            on_value: root.screen.button_text = str(self.value)
+        Button:
+            text: "Done"
+            on_release: root.closeandUpdate()
+
+<CalandarPopup>:
+    BoxLayout:
+        title: "Calandar Events"
         orientation: "vertical"
         Slider:
             on_value: root.screen.button_text = str(self.value)
