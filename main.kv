@@ -8,7 +8,7 @@
         # x access and the percentage of space left over by the
         # other widgets
         Button:
-            text: "Shuffle - test"
+            text: "Shuffle"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_shuffle();
@@ -254,12 +254,23 @@
             text: "Submit"
             on_press: root.btn_checkInput(entry.text)
 
-<MyPopup>:
+<VolumePopup>:
+    title: ""
+    separator_height: 0
     BoxLayout:
-        title: "Submit"
         orientation: "vertical"
+        Button:
+            text: "-1"
+            on_release: root.btn_volDown()
+        Button:
+            text: "+1"
+            on_release: root.btn_volUp()
         Slider:
+            text: "Select Volume"
             on_value: root.screen.button_text = str(self.value)
         Button:
             text: "Done"
             on_release: root.closeandUpdate()
+        Button:
+            text: "Exit"
+            on_release: root.exitandUpdate()

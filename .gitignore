@@ -6,3 +6,7 @@ Testing.py
 __pycache__
 calculator.py
 calculator.kv
+client_secret.json
+credentials.json
+studentdb.kv
+studentdb.py

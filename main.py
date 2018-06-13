@@ -11,6 +11,7 @@ from kivy.uix.stacklayout import StackLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.utils import platform
 from kivy.properties import StringProperty
+from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 
 # Create both screens. Please note the root.manager.current: this is how
@@ -50,7 +51,7 @@ def refreshToken():
     token = 'Bearer ' + r.json()['access_token']
 
 def setVolume(volume):
-    devicePlaying = getVolume()
+    devicePlaying = getDevice()
     print (devicePlaying)
     if (devicePlaying == 'TV'):
         volume = int(volume) / 5
@@ -59,17 +60,29 @@ def setVolume(volume):
     print(r.status_code, r.reason)
     print(r.text[:300] + '...')
 
-def getVolume():
+def getDevice():
     try:
         global currentVolume
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
         print(r.status_code, r.reason)
         device = r.json()['device']
+        #update volume while we are here
         currentVolume = str(device['volume_percent'])
         return device['name']
     except:
         print("Nothing Playing")
         return
+
+def getVolume():
+    try:
+        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+        print(r.status_code, r.reason)
+        device = r.json()['device']
+        currentVolume = str(device['volume_percent'])
+        return currentVolume
+    except:
+        print("Nothing Playing")
+        return '0'
     
 refreshToken()
 getVolume()
@@ -93,10 +106,13 @@ def mainThread():
 newthread = threading.Thread(target = mainThread)
 newthread.start()
 
-class MyPopup(Popup):
+class VolumePopup(Popup):
+    #slider_volume_input = ObjectProperty()
+
     def __init__(self,screen,**kwargs):
-        super(MyPopup,self).__init__(**kwargs)
+        super(VolumePopup,self).__init__(**kwargs)
         self.screen = screen
+        #self.slider_volume_input.text = getVolume()
     
     def closeandUpdate(self):
         def thread():
@@ -106,13 +122,53 @@ class MyPopup(Popup):
         newthread.start()
         self.dismiss()
 
+    def exitandUpdate(self):
+        def thread():
+            self.screen.button_text = getVolume()
+        self.screen.button_text = self.screen.button_text.split(".")[0]
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+        self.dismiss()
+
+    def btn_volDown(self):
+        def thread():
+            #Vol down
+            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+            try:
+                voldict = r.json()['device']
+                volume = voldict['volume_percent']
+                volume = int(volume) - 2
+                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+            except:
+                print("Nothing Playing")
+                return
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+
+    def btn_volUp(self):
+        def thread():
+            #Vol down
+            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+            try:
+                voldict = r.json()['device']
+                volume = voldict['volume_percent']
+                volume = int(volume) + 2
+                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+            except:
+                print("Nothing Playing")
+                return
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+
 
 # Declare screens
 class HomeScreen(Screen):
     button_text = StringProperty(currentVolume)
     def __init__(self,**kwargs):
         super(HomeScreen,self).__init__(**kwargs)
-        self.popup = MyPopup(self)
+        self.popup = VolumePopup(self)
 
     def btn_skip(self):
         def thread():
@@ -145,38 +201,6 @@ class HomeScreen(Screen):
             except:
                 print("Nothing Playing")
                 return       
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-        
-    def btn_volDown(self):
-        def thread():
-            #Vol down
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            try:
-                voldict = r.json()['device']
-                volume = voldict['volume_percent']
-                volume = int(volume) - 2
-                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-            except:
-                print("Nothing Playing")
-                return
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-
-    def btn_volUp(self):
-        def thread():
-            #Vol down
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            try:
-                voldict = r.json()['device']
-                volume = voldict['volume_percent']
-                volume = int(volume) + 2
-                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-            except:
-                print("Nothing Playing")
-                return
 
         newthread = threading.Thread(target = thread)
         newthread.start()
