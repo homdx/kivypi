@@ -23,11 +23,14 @@ Builder.load_file('main.kv')
 filename = "spot.txt"
 
 if platform == 'linux':
-    filename = '/home/pi/kivypi/spot.txt'
-    import git
-    git_dir = "/home/pi/kivypi"
-    g = git.cmd.Git(git_dir)
-    g.pull()
+    try:
+        filename = '/home/pi/kivypi/spot.txt'
+        import git
+        git_dir = "/home/pi/kivypi"
+        g = git.cmd.Git(git_dir)
+        g.pull()
+    except:
+        print("unable to pull latest version")
 
 with open(filename) as f:
     lines = f.readlines()
