@@ -25,7 +25,7 @@ from kivy.uix.popup import Popup
 # you can control the ScreenManager from kv. Each screen has by default a
 # property manager that gives you the instance of the ScreenManager used.
 
-Builder.load_file('main.kv')
+root_widget = Builder.load_file('main.kv')
 
 filename = "spot.txt"
 
@@ -113,6 +113,15 @@ def mainThread():
 newthread = threading.Thread(target = mainThread)
 newthread.start()
 
+class CalandarListButton(ListItemButton):
+    pass
+
+class CalandarPopup(Popup):
+    def __init__(self,screen,**kwargs):
+        super(CalandarPopup,self).__init__(**kwargs)
+        self.screen = screen
+        calandar_list = ObjectProperty()     
+
 class VolumePopup(Popup):
     #slider_volume_input = ObjectProperty()
 
@@ -175,7 +184,8 @@ class HomeScreen(Screen):
     button_text = StringProperty(currentVolume)
     def __init__(self,**kwargs):
         super(HomeScreen,self).__init__(**kwargs)
-        self.popup = VolumePopup(self)
+        self.volPopup = VolumePopup(self)
+        self.calPopup = CalandarPopup(self)
 
     def btn_googleCalander(self):
                 # Setup the Calendar API

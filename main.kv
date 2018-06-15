@@ -1,3 +1,7 @@
+# Reference main.py
+#: import ListAdapter kivy.adapters.listadapter.ListAdapter
+#: import ListItemButton kivy.uix.listview.ListItemButton
+
 <HomeScreen>:
     StackLayout:
         orientation: "lr-tb"
@@ -75,7 +79,7 @@
             text: "Volume: " + root.button_text
             size_hint: None, .235
             width: 147.5
-            on_release: root.popup.open()
+            on_release: root.volPopup.open()
         Button:
             text: "Start Cast"
             size_hint: None, .235
@@ -110,6 +114,7 @@
             text: "Google Calander\nWIP"
             size_hint: None, .235
             width: 147.5
+            on_release: root.calPopup.open()
         Button:
             text: "Add Current Playing"
             size_hint: None, .235
@@ -255,14 +260,13 @@
             on_press: root.btn_checkInput(entry.text)
 
 <CalandarPopup>:
+    calandar_list: calandar_list_view
     title: ""
     separator_height: 0
-    BoxLayout:
-        title: "Submit Volume"
-        orientation: "vertical"
-        Button:
-            text: "Exit"
-            on_release: root.dismiss()
+    ListView:
+        id: calandar_list_view
+        adapter:
+            ListAdapter(data=["Doug Smith"], cls=app.CalandarListButton)
 
 <VolumePopup>:
     title: ""
