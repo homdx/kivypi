@@ -5,13 +5,16 @@ import json
 import webbrowser
 import os
 import threading, time
+import datetime
+from random import sample
+from string import ascii_lowercase
 from apiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
-import datetime
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.stacklayout import StackLayout
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.listview import ListItemButton
@@ -20,12 +23,11 @@ from kivy.properties import StringProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
 
-
 # Create both screens. Please note the root.manager.current: this is how
 # you can control the ScreenManager from kv. Each screen has by default a
 # property manager that gives you the instance of the ScreenManager used.
 
-root_widget = Builder.load_file('main.kv')
+root_widget = Builder.load_file('main.kv') 
 
 filename = "spot.txt"
 
@@ -181,11 +183,10 @@ class VolumePopup(Popup):
 
 # Declare screens
 class HomeScreen(Screen):
-    button_text = StringProperty(currentVolume)
+    #button_text = StringProperty(currentVolume)
     def __init__(self,**kwargs):
         super(HomeScreen,self).__init__(**kwargs)
         self.volPopup = VolumePopup(self)
-        self.calPopup = CalandarPopup(self)
 
     def btn_googleCalander(self):
                 # Setup the Calendar API
@@ -473,6 +474,33 @@ class HomeScreen2(Screen):
 
     pass
 
+class CalandarScreen(Screen):
+    def __init__(self,**kwargs):
+        super(CalandarScreen,self).__init__(**kwargs)
+
+    def populate(self):
+        self.rv.data = [{'value': ''.join(sample(ascii_lowercase, 6))}
+                        for x in range(50)]
+
+    def sort(self):
+        self.rv.data = sorted(self.rv.data, key=lambda x: x['value'])
+
+    def clear(self):
+        self.rv.data = []
+
+    def insert(self, value):
+        self.rv.data.insert(0, {'value': value or 'default value'})
+
+    def update(self, value):
+        if self.rv.data:
+            self.rv.data[0]['value'] = value or 'default new value'
+            self.rv.refresh_from_data()
+
+    def remove(self):
+        if self.rv.data:
+            self.rv.data.pop(0)
+    pass
+
 class LockScreen(Screen): 
     def btn_checkInput(self, input):
         if input == '4444':
@@ -487,6 +515,7 @@ sm = ScreenManager()
 sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(HomeScreen2(name='home2'))
+sm.add_widget(CalandarScreen(name='calandar'))
 
 class PiDemoApp(App):
 
