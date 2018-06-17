@@ -43,7 +43,7 @@ triggerToken = lines[2]
 
 token = ''
 playbackState = ''
-currentVolume = '50'
+currentVolume = '0'
 running = 1
 
 def refreshToken():
@@ -76,6 +76,31 @@ def getDevice():
         print("Nothing Playing")
         return
 
+def getUserInfo():
+    try:
+        global userId
+        r = requests.get("https://api.spotify.com/v1/me", headers={'Authorization': token})
+        print(r.status_code, r.reason)
+        userId = r.json()['id']
+        return userId
+    except:
+        print("Error getting user data")
+        return
+
+def getUserPlaylists():
+    try:
+        r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists", headers={'Authorization': token})
+        print(r.status_code, r.reason)
+        items = r.json()['items']
+        playlistDict = {}
+        for item in items: 
+            playlistDict[item['name']] = item['id']
+        
+        return playlistDict
+    except:
+        print("Error getting playlist data")
+        return
+
 def getVolume():
     try:
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
@@ -88,7 +113,10 @@ def getVolume():
         return '0'
     
 refreshToken()
-getVolume()
+currentVolume = getVolume()
+userId = getUserInfo()
+playlistDict =  getUserPlaylists()
+print playlistDict
 
 #Loop on seprate thread to refresh token
 def mainThread():
@@ -196,11 +224,11 @@ class HomeScreen(Screen):
             try:
                 items = r.json()['item']
                 trackId = items['id']
-                r = requests.get("https://api.spotify.com/v1/users/t7lfn4yveurkn8fa4hcvhf083/playlists/32AqjHtK9ofJcwuhWBot01", headers={'Authorization': token})
+                r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/32AqjHtK9ofJcwuhWBot01", headers={'Authorization': token})
                 #Check track is not already in playlist
                 if trackId not in r.text: 
                     print("Adding to Playlist")
-                    requests.post("https://api.spotify.com/v1/users/t7lfn4yveurkn8fa4hcvhf083/playlists/32AqjHtK9ofJcwuhWBot01/tracks?uris=spotify%3Atrack%3A" + trackId, headers={'Authorization': token})
+                    requests.post("https://api.spotify.com/v1/users/" + userId + "/playlists/32AqjHtK9ofJcwuhWBot01/tracks?uris=spotify%3Atrack%3A" + trackId, headers={'Authorization': token})
             except:
                 print("Nothing Playing")
                 return       
@@ -269,7 +297,7 @@ class HomeScreen(Screen):
     def btn_neilPlaylist(self):
         def thread():
             #Play Neil playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:1T6JGyXUm28pTaSJqH8ovz'}
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             time.sleep( 1 )
             requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
@@ -280,7 +308,7 @@ class HomeScreen(Screen):
     def btn_rapFavsPlaylist(self):
         def thread():
             #Play rapFavs playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:2iYZUOSUmQasCPxaCVdLwD'}
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:2iYZUOSUmQasCPxaCVdLwD'}
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             time.sleep( 1 )
             requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
@@ -291,7 +319,7 @@ class HomeScreen(Screen):
     def btn_musicBoizPlaylist(self):
         def thread():
             #Play musicBoiz playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:7909VP7zKBJohzWJKoRFx2'}
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:7909VP7zKBJohzWJKoRFx2'}
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             time.sleep( 1 )
             requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
@@ -313,7 +341,7 @@ class HomeScreen(Screen):
                 print(r.status_code, r.reason)
                 #Play on New Device
                 time.sleep( 1 )
-                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+                payload = {'context_uri': 'spotify:user:' + userId + ':playlist:1T6JGyXUm28pTaSJqH8ovz'}
                 r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
                 print(r.status_code, r.reason)
                 time.sleep( 1 )
@@ -341,7 +369,7 @@ class HomeScreen(Screen):
                 print(r.status_code, r.reason)
                 #Play on New Device
                 time.sleep( 1 )
-                payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:1T6JGyXUm28pTaSJqH8ovz'}
+                payload = {'context_uri': 'spotify:user:' + userId + ':playlist:1T6JGyXUm28pTaSJqH8ovz'}
                 r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
                 print(r.status_code, r.reason)
                 time.sleep( 1 )
@@ -377,7 +405,7 @@ class HomeScreen(Screen):
     def btn_considerPlaylist(self):
         def thread():
             #Play consider playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:32AqjHtK9ofJcwuhWBot01'}
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:32AqjHtK9ofJcwuhWBot01'}
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             time.sleep( 1 )
             requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
@@ -399,7 +427,7 @@ class HomeScreen2(Screen):
     def btn_discoverWeeklyPlaylist(self):
         def thread():
             #Play discoverWeekly playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:37i9dQZEVXcWS97182mQq0'}
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:37i9dQZEVXcWS97182mQq0'}
             r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})  
             print(r.status_code, r.reason)
             print(r.text[:300] + '...')  
@@ -414,7 +442,7 @@ class HomeScreen2(Screen):
     def btn_tableTopPlaylist(self):
         def thread():
             #Play discoverWeekly playlist
-            payload = {'context_uri': 'spotify:user:t7lfn4yveurkn8fa4hcvhf083:playlist:28uPKzcnErsq2OMG7EvqrG'}
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:28uPKzcnErsq2OMG7EvqrG'}
             requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
             time.sleep( 1 )
             requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
