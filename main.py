@@ -8,9 +8,9 @@ import threading, time
 import datetime
 from random import sample
 from string import ascii_lowercase
-from apiclient.discovery import build
-from httplib2 import Http
-from oauth2client import file, client, tools
+#from apiclient.discovery import build
+#from httplib2 import Http
+#from oauth2client import file, client, tools
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -168,7 +168,7 @@ getPlaybackData()
 userId = getUserInfo()
 playlistDict = getUserPlaylists()
 devicesDict = getUserDevices()
-calandarList = getGoogleCalanderItem()
+#calandarList = getGoogleCalanderItem()
 print (playBackInfo)
 
 #Loop on seprate thread to refresh token
@@ -553,7 +553,7 @@ class CalandarScreen(Screen):
     def __init__(self,**kwargs):
         super(CalandarScreen,self).__init__(**kwargs)
         self.calandarPage = CalandarPage(self)
-        self.calandarPage.populate(calandarList)
+        #self.calandarPage.populate(calandarList)
         self.add_widget(self.calandarPage)
 
     pass
