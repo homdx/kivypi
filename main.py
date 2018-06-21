@@ -8,9 +8,9 @@ import threading, time
 import datetime
 from random import sample
 from string import ascii_lowercase
-from apiclient.discovery import build
-from httplib2 import Http
-from oauth2client import file, client, tools
+#from apiclient.discovery import build
+#from httplib2 import Http
+#from oauth2client import file, client, tools
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -27,14 +27,9 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.listview import ListView
 from kivy.base import runTouchApp
 
-#print (inspect.stack()[0][1])
-#print (inspect.getfile(inspect.currentframe()))
-print("Current folder: " + os.getcwd())
 os.chdir(os.path.dirname(__file__))
 print (os.path.dirname(__file__)) # relative directory path
 print("Current folder: " + os.getcwd())
-#print (os.path.abspath(__file__)) # absolute file path
-#print (os.path.basename(__file__)) # the file name only)
 
 root_widget = Builder.load_file('main.kv') 
 
@@ -168,7 +163,7 @@ getPlaybackData()
 userId = getUserInfo()
 playlistDict = getUserPlaylists()
 devicesDict = getUserDevices()
-calandarList = getGoogleCalanderItem()
+#calandarList = getGoogleCalanderItem()
 print (playBackInfo)
 
 #Loop on seprate thread to refresh token
@@ -553,7 +548,7 @@ class CalandarScreen(Screen):
     def __init__(self,**kwargs):
         super(CalandarScreen,self).__init__(**kwargs)
         self.calandarPage = CalandarPage(self)
-        self.calandarPage.populate(calandarList)
+        #self.calandarPage.populate(calandarList)
         self.add_widget(self.calandarPage)
 
     pass
