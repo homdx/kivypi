@@ -56,27 +56,26 @@
             width: 147.5
             on_press: root.btn_skip();
         Button:
-            text: "Play Neil\nPlaylist"
+            text: "Playlists"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_neilPlaylist();
+            on_press: root.manager.current = 'playlists'
         Button:
-            text: "Play Music Boiz\nPlaylist"
+            text: "Devices"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_musicBoizPlaylist()
+            on_press: root.manager.current = 'devices'
         Button:
-            text: "Play Rap Favs\nPlaylist"
+            text: "Add Current Playing\n to Favorite Playlist"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_rapFavsPlaylist()
+            on_press: root.btn_addCurrentPlaying();
         Button:
-            text: "Consider Playlist"
+            text: "Media - TBA"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_considerPlaylist()
         Button:
-            text: "Volume: "
+            text: "Volume: " + root.button_text
             size_hint: None, .235
             width: 147.5
             on_release: root.volPopup.open()
@@ -96,32 +95,30 @@
             width: 147.5
             on_press: root.btn_resumeCast();
         Button:
-            text: "Play on TV"
+            text: "TBA"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_playTV();
         Button:
-            text: "Play on \nHome Speaker"
+            text: "TBA"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_playLivHome();
         Button:
             text: "Train Timetable\nBrowser Only"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_trainTimetable();
         Button:
-            text: "Google Calander\nWIP"
+            text: "Google Calander"
             size_hint: None, .235
             width: 147.5
             on_release: root.manager.current = 'calandar'
         Button:
-            text: "Add Current Playing"
+            text: "Lock"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_addCurrentPlaying();
+            on_press: root.manager.current = 'lock'
         Button:
-            text: "Home Page 2"
+            text: "Page 2"
             size_hint: None, .235
             width: 147.5
             on_press: root.manager.current = 'home2'
@@ -161,15 +158,13 @@
             size_hint: None, .235
             width: 147.5
         Button:
-            text: "Table Top Playlist"
+            text: "TBA"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_tableTopPlaylist()
         Button:
-            text: "Discovery Weekly"
+            text: "TBA"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_discoverWeeklyPlaylist()
         Button:
             text: "TBA"
             size_hint: None, .235
@@ -257,9 +252,107 @@
             on_press: entry.text += self.text
         Button:
             text: "Submit"
-            on_press: root.btn_checkInput(entry.text)
+            on_press: root.manager.current = 'home'
 
-<Row@BoxLayout>:
+<PL@BoxLayout>:
+    spacing: dp(16)
+    canvas.before:
+        Color:
+            rgba: 0.5, 0.5, 0.5, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    value: ''
+    Button:
+        text: root.value
+        on_press: root.screen.playlist(root.value)
+<PlayListPage>:
+    canvas:
+        Color:
+            rgba: 0.3, 0.3, 0.3, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    rv: rv
+    orientation: 'vertical'
+    name: ''
+    GridLayout:
+        cols: 3
+        rows: 2
+        size_hint_y: None
+        height: dp(108)
+        padding: dp(8)
+        Label:
+            text: root.name
+        Button:
+            text: 'Back'
+            size_hint: None, .235
+            on_press: root.rv.viewclass.screen.manager.current = 'home'
+
+    RecycleView:
+        id: rv
+        scroll_type: ['bars', 'content']
+        scroll_wheel_distance: dp(114)
+        bar_width: dp(10)
+        viewclass: 'PL'
+        RecycleBoxLayout:
+            default_size: None, dp(56)
+            default_size_hint: 1, None
+            size_hint_y: None
+            height: self.minimum_height
+            orientation: 'vertical'
+            spacing: dp(2)
+
+<DV@BoxLayout>:
+    spacing: dp(16)
+    canvas.before:
+        Color:
+            rgba: 0.5, 0.5, 0.5, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    value: ''
+    Button:
+        text: root.value
+        on_press: root.screen.device(root.value)
+<DevicesPage>:
+    canvas:
+        Color:
+            rgba: 0.3, 0.3, 0.3, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    rv: rv
+    orientation: 'vertical'
+    name: ''
+    GridLayout:
+        cols: 3
+        rows: 2
+        size_hint_y: None
+        height: dp(108)
+        padding: dp(8)
+        Label:
+            text: root.name
+        Button:
+            text: 'Back'
+            size_hint: None, .235
+            on_press: root.rv.viewclass.screen.manager.current = 'home'
+
+    RecycleView:
+        id: rv
+        scroll_type: ['bars', 'content']
+        scroll_wheel_distance: dp(114)
+        bar_width: dp(10)
+        viewclass: 'DV'
+        RecycleBoxLayout:
+            default_size: None, dp(56)
+            default_size_hint: 1, None
+            size_hint_y: None
+            height: self.minimum_height
+            orientation: 'vertical'
+            spacing: dp(2)
+
+<Row2@BoxLayout>:
     canvas.before:
         Color:
             rgba: 0.5, 0.5, 0.5, 1
@@ -269,7 +362,7 @@
     value: ''
     Label:
         text: root.value
-<CalandarScreen>:
+<CalandarPage>:
     canvas:
         Color:
             rgba: 0.3, 0.3, 0.3, 1
@@ -284,45 +377,19 @@
         size_hint_y: None
         height: dp(108)
         padding: dp(8)
-        spacing: dp(16)
+        Label:
+            text: 'Google Calandar Events'
         Button:
-            text: 'Populate list'
-            on_press: root.populate()
-        Button:
-            text: 'Sort list'
-            on_press: root.sort()
-        Button:
-            text: 'Clear list'
-            on_press: root.clear()
-        BoxLayout:
-            spacing: dp(8)
-            Button:
-                text: 'Insert new item'
-                on_press: root.insert(new_item_input.text)
-            TextInput:
-                id: new_item_input
-                size_hint_x: 0.6
-                hint_text: 'value'
-                padding: dp(10), dp(10), 0, 0
-        BoxLayout:
-            spacing: dp(8)
-            Button:
-                text: 'Update first item'
-                on_press: root.update(update_item_input.text)
-            TextInput:
-                id: update_item_input
-                size_hint_x: 0.6
-                hint_text: 'new value'
-                padding: dp(10), dp(10), 0, 0
-        Button:
-            text: 'Remove first item'
-            on_press: root.remove()
+            text: 'Back'
+            size_hint: None, .235
+            on_press: root.rv.viewclass.screen.manager.current = 'home'
+
     RecycleView:
         id: rv
         scroll_type: ['bars', 'content']
         scroll_wheel_distance: dp(114)
         bar_width: dp(10)
-        viewclass: 'Row'
+        viewclass: 'Row2'
         RecycleBoxLayout:
             default_size: None, dp(56)
             default_size_hint: 1, None

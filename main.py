@@ -22,10 +22,19 @@ from kivy.utils import platform
 from kivy.properties import StringProperty
 from kivy.properties import ObjectProperty
 from kivy.uix.popup import Popup
+from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
+from kivy.uix.listview import ListView
+from kivy.base import runTouchApp
 
-# Create both screens. Please note the root.manager.current: this is how
-# you can control the ScreenManager from kv. Each screen has by default a
-# property manager that gives you the instance of the ScreenManager used.
+#print (inspect.stack()[0][1])
+#print (inspect.getfile(inspect.currentframe()))
+print("Current folder: " + os.getcwd())
+os.chdir(os.path.dirname(__file__))
+print (os.path.dirname(__file__)) # relative directory path
+print("Current folder: " + os.getcwd())
+#print (os.path.abspath(__file__)) # absolute file path
+#print (os.path.basename(__file__)) # the file name only)
 
 root_widget = Builder.load_file('main.kv') 
 
@@ -51,8 +60,7 @@ sRefreshToken = lines[1]
 triggerToken = lines[2]
 
 token = ''
-playbackState = ''
-currentVolume = '0'
+playBackInfo = {"playing": '', "volume": '', "device": '', "deviceType": '', "shuffling": ''}
 running = 1
 
 def refreshToken():
@@ -62,28 +70,36 @@ def refreshToken():
     print(r.text[:300] + '...')
     token = 'Bearer ' + r.json()['access_token']
 
-def setVolume(volume):
-    devicePlaying = getDevice()
-    print (devicePlaying)
-    if (devicePlaying == 'TV'):
-        volume = int(volume) / 5
-    print (volume)
-    r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-    print(r.status_code, r.reason)
-    print(r.text[:300] + '...')
-
-def getDevice():
+def getPlaybackData():
     try:
-        global currentVolume
+        global playBackInfo
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-        print(r.status_code, r.reason)
         device = r.json()['device']
-        #update volume while we are here
-        currentVolume = str(device['volume_percent'])
-        return device['name']
+
+        playing = r.json()['is_playing']
+        volume = str(device['volume_percent'])
+        device = str(device['name'])
+        #deviceType = device['type']
+        #print (deviceType)
+        shuffling = r.json()['shuffle_state']
+
+        playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": device, "shuffling": shuffling}
+        print (playBackInfo)
     except:
         print("Nothing Playing")
-        return
+
+def setVolume(volume):
+    try:
+        global playBackInfo
+        if (playBackInfo['deviceType'] == 'TV'):
+            volume = int(volume) / 5
+        print (volume)
+        r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+        playBackInfo['volume'] = volume
+        print(r.status_code, r.reason)
+        print(r.text[:300] + '...')
+    except:
+        print("Nothing Playing")
 
 def getUserInfo():
     try:
@@ -103,29 +119,57 @@ def getUserPlaylists():
         items = r.json()['items']
         playlistDict = {}
         for item in items: 
-            playlistDict[item['name']] = item['id']
+            playlistDict[str(item['name'])] = str(item['id'])
         
         return playlistDict
     except:
         print("Error getting playlist data")
         return
+        
+def getUserDevices():
+            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+            deviceDict = {}
+            devices = r.json()['devices']
+            for device in devices:
+                deviceDict[str(device['name'])] = str(device['id'])
 
-def getVolume():
-    try:
-        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-        print(r.status_code, r.reason)
-        device = r.json()['device']
-        currentVolume = str(device['volume_percent'])
-        return currentVolume
-    except:
-        print("Nothing Playing")
-        return '0'
+            return deviceDict
+    
+def getGoogleCalanderItem():
+                # Setup the Calendar API
+        SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
+        store = file.Storage('credentials.json')
+        creds = store.get()
+        if not creds or creds.invalid:
+            flow = client.flow_from_clientsecrets('client_secrets.json', SCOPES)
+            creds = tools.run_flow(flow, store)
+        service = build('calendar', 'v3', http=creds.authorize(Http()))
+
+        # Call the Calendar API
+        now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
+        #print('Getting the upcoming 10 events')
+        events_result = service.events().list(calendarId='primary', timeMin=now,
+                                            maxResults=10, singleEvents=True,
+                                            orderBy='startTime').execute()
+        events = events_result.get('items', [])
+        
+        calList = list()
+        if not events:
+            print('No upcoming events found.')
+        for event in events:
+            start = event['start'].get('dateTime', event['start'].get('date'))
+            calList.append(event['summary'] + " " + start)
+            #print(start, event['summary'])
+        return calList
     
 refreshToken()
-currentVolume = getVolume()
+#currentVolume = getVolume()
+getPlaybackData()
 userId = getUserInfo()
-playlistDict =  getUserPlaylists()
-print playlistDict
+playlistDict = getUserPlaylists()
+devicesDict = getUserDevices()
+calandarList = getGoogleCalanderItem()
+print (playBackInfo)
 
 #Loop on seprate thread to refresh token
 def mainThread():
@@ -139,29 +183,19 @@ def mainThread():
             else:
                 break
             #if x % 20 == 0:
-            #    getVolume()
+            #    getPlaybackData()
         print ("Refreshing Token")
         refreshToken()
 
 newthread = threading.Thread(target = mainThread)
-newthread.start()
-
-class CalandarListButton(ListItemButton):
-    pass
-
-class CalandarPopup(Popup):
-    def __init__(self,screen,**kwargs):
-        super(CalandarPopup,self).__init__(**kwargs)
-        self.screen = screen
-        calandar_list = ObjectProperty()     
+newthread.start() 
 
 class VolumePopup(Popup):
-    #slider_volume_input = ObjectProperty()
 
     def __init__(self,screen,**kwargs):
         super(VolumePopup,self).__init__(**kwargs)
         self.screen = screen
-        #self.slider_volume_input.text = getVolume()
+        self.volume = playBackInfo['volume']
     
     def closeandUpdate(self):
         def thread():
@@ -173,7 +207,7 @@ class VolumePopup(Popup):
 
     def exitandUpdate(self):
         def thread():
-            self.screen.button_text = getVolume()
+            self.screen.button_text = playBackInfo['volume']
         self.screen.button_text = self.screen.button_text.split(".")[0]
         newthread = threading.Thread(target = thread)
         newthread.start()
@@ -186,8 +220,9 @@ class VolumePopup(Popup):
             try:
                 voldict = r.json()['device']
                 volume = voldict['volume_percent']
-                volume = int(volume) - 2
+                volume = int(volume) - 1
                 r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+                playBackInfo['volume'] = str(volume)
             except:
                 print("Nothing Playing")
                 return
@@ -202,8 +237,9 @@ class VolumePopup(Popup):
             try:
                 voldict = r.json()['device']
                 volume = voldict['volume_percent']
-                volume = int(volume) + 2
+                volume = int(volume) + 1
                 r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+                playBackInfo['volume'] = str(volume)
             except:
                 print("Nothing Playing")
                 return
@@ -214,34 +250,10 @@ class VolumePopup(Popup):
 
 # Declare screens
 class HomeScreen(Screen):
-    #button_text = StringProperty(currentVolume)
+    button_text = StringProperty(playBackInfo['volume'])
     def __init__(self,**kwargs):
         super(HomeScreen,self).__init__(**kwargs)
         self.volPopup = VolumePopup(self)
-
-    def btn_googleCalander(self):
-                # Setup the Calendar API
-        SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
-        store = file.Storage('credentials.json')
-        creds = store.get()
-        if not creds or creds.invalid:
-            flow = client.flow_from_clientsecrets('client_secret.json', SCOPES)
-            creds = tools.run_flow(flow, store)
-        service = build('calendar', 'v3', http=creds.authorize(Http()))
-
-        # Call the Calendar API
-        now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-        print('Getting the upcoming 10 events')
-        events_result = service.events().list(calendarId='primary', timeMin=now,
-                                            maxResults=10, singleEvents=True,
-                                            orderBy='startTime').execute()
-        events = events_result.get('items', [])
-
-        if not events:
-            print('No upcoming events found.')
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            print(start, event['summary'])
 
     def btn_skip(self):
         def thread():
@@ -505,31 +517,91 @@ class HomeScreen2(Screen):
 
     pass
 
-class CalandarScreen(Screen):
+class DevicesPage(BoxLayout):
+    def __init__(self,screen,name,**kwargs):
+        super(DevicesPage,self).__init__(**kwargs)
+        self.rv.viewclass.screen = screen
+        self.name = name
+
+    def populate(self, listDict):
+        self.rv.data = [{'value': x} for x in listDict.keys()]
+
+    pass
+
+class PlaylistPage(BoxLayout):
+    def __init__(self,screen,name,**kwargs):
+        super(PlaylistPage,self).__init__(**kwargs)
+        self.rv.viewclass.screen = screen
+        self.name = name
+
+    def populate(self, listDict):
+        self.rv.data = [{'value': x} for x in listDict.keys()]
+
+    pass
+
+class CalandarPage(BoxLayout):
+    def __init__(self,screen,**kwargs):
+        super(CalandarPage,self).__init__(**kwargs)
+        self.rv.viewclass.screen = screen
+
+    def populate(self, calList):
+        self.rv.data = [{'value': x} for x in calList]
+
+    pass
+
+class CalandarScreen(Screen): 
     def __init__(self,**kwargs):
         super(CalandarScreen,self).__init__(**kwargs)
+        self.calandarPage = CalandarPage(self)
+        self.calandarPage.populate(calandarList)
+        self.add_widget(self.calandarPage)
 
-    def populate(self):
-        self.rv.data = [{'value': ''.join(sample(ascii_lowercase, 6))}
-                        for x in range(50)]
+    pass
+class PlaylistScreen(Screen): 
+    def __init__(self,**kwargs):
+        super(PlaylistScreen,self).__init__(**kwargs)
+        self.playListsPage = PlaylistPage(self, 'Playlists')
+        self.playListsPage.populate(playlistDict)
+        self.add_widget(self.playListsPage)
 
-    def sort(self):
-        self.rv.data = sorted(self.rv.data, key=lambda x: x['value'])
+    def playlist(self, name):
+        def thread():
+            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:' + playlistDict[name]}
+            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+            time.sleep( 1 )
+            requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
 
-    def clear(self):
-        self.rv.data = []
+        newthread = threading.Thread(target = thread)
+        newthread.start()
 
-    def insert(self, value):
-        self.rv.data.insert(0, {'value': value or 'default value'})
+    pass
 
-    def update(self, value):
-        if self.rv.data:
-            self.rv.data[0]['value'] = value or 'default new value'
-            self.rv.refresh_from_data()
+class DevicesScreen(Screen): 
+    def __init__(self,**kwargs):
+        super(DevicesScreen,self).__init__(**kwargs)
+        self.devicesPage = DevicesPage(self, 'Devices')
+        self.devicesPage.populate(devicesDict)
+        self.add_widget(self.devicesPage)
 
-    def remove(self):
-        if self.rv.data:
-            self.rv.data.pop(0)
+    #WIP
+    def device(self, id):
+        def thread():
+            payload = {'device_ids':[devicesDict[id]]}
+            print(payload)
+            r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+            print(r.status_code, r.reason)
+            #Play on New Device
+            #time.sleep( 1 )
+            #payload = {'context_uri': 'spotify:user:' + userId + ':playlist:1T6JGyXUm28pTaSJqH8ovz'}
+            #r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+            #print(r.status_code, r.reason)
+            #time.sleep( 1 )
+            #r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+            #print(r.status_code, r.reason)
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+
     pass
 
 class LockScreen(Screen): 
@@ -547,7 +619,8 @@ sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(HomeScreen2(name='home2'))
 sm.add_widget(CalandarScreen(name='calandar'))
-
+sm.add_widget(PlaylistScreen(name='playlists'))
+sm.add_widget(DevicesScreen(name='devices'))
 class PiDemoApp(App):
 
     def build(self):
