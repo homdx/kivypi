@@ -55,7 +55,9 @@ sRefreshToken = lines[1]
 triggerToken = lines[2]
 
 token = ''
-playBackInfo = {"playing": '', "volume": '', "device": '', "deviceType": '', "shuffling": ''}
+playBackInfo = {"playing": '', "volume": '', "device": '', "deviceType": '', "shuffling": '', "currentSong": '', "currentArtist": '', "progress_ms": '',"duration_ms": ''}
+devicesDict = {}
+playlistDict = {}
 running = 1
 
 def refreshToken():
@@ -69,19 +71,28 @@ def getPlaybackData():
     try:
         global playBackInfo
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-        device = r.json()['device']
+        deviceData = r.json()['device']
+        item = r.json()['item']
+        artist = item['artists']
 
         playing = r.json()['is_playing']
-        volume = str(device['volume_percent'])
-        device = str(device['name'])
-        #deviceType = device['type']
-        #print (deviceType)
+        volume = str(deviceData['volume_percent'])
+        device = str(deviceData['name'])
+        deviceType = str(deviceData['type'])
         shuffling = r.json()['shuffle_state']
+        currentSong = str(item['name'])
+        currentArtist = str(artist[0]['name'])
+        progress_ms = r.json()['progress_ms']
+        duration_ms = str(item['duration_ms'])
 
-        playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": device, "shuffling": shuffling}
+        playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": deviceType, "shuffling": shuffling, "currentSong": currentSong, "currentArtist": currentArtist, "progress_ms": progress_ms,"duration_ms": duration_ms}
         print (playBackInfo)
-    except:
-        print("Nothing Playing")
+    except Exception as e:
+        print("Nothing Playing " + e.message)
+        playBackInfo['playing'] = 'false'
+        playBackInfo['device'] = ''
+        playBackInfo['deviceType'] = ''
+        print (playBackInfo)
 
 def setVolume(volume):
     try:
@@ -107,7 +118,22 @@ def getUserInfo():
         print("Error getting user data")
         return
 
+def getFavoritePlaylist():
+    path = 'favoritePlaylist.txt'
+    f=open(path, "r")
+    fav = f.read()
+    f.close
+    return fav
+
+def getFavoriteDevice():
+    path = 'favoriteDevice.txt'
+    f=open(path, "r")
+    fav = f.read()
+    f.close
+    return fav
+
 def getUserPlaylists():
+    global playlistDict
     try:
         r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists", headers={'Authorization': token})
         print(r.status_code, r.reason)
@@ -122,13 +148,12 @@ def getUserPlaylists():
         return
         
 def getUserDevices():
-            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
-            deviceDict = {}
-            devices = r.json()['devices']
-            for device in devices:
-                deviceDict[str(device['name'])] = str(device['id'])
-
-            return deviceDict
+        global devicesDict
+        r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+        devicesDict = {}
+        devices = r.json()['devices']
+        for device in devices:
+            devicesDict[str(device['name'])] = str(device['id'])
     
 def getGoogleCalanderItem():
                 # Setup the Calendar API
@@ -156,13 +181,12 @@ def getGoogleCalanderItem():
             calList.append(event['summary'] + " " + start)
             #print(start, event['summary'])
         return calList
-    
+
 refreshToken()
-#currentVolume = getVolume()
 getPlaybackData()
 userId = getUserInfo()
-playlistDict = getUserPlaylists()
-devicesDict = getUserDevices()
+getUserPlaylists()
+getUserDevices()
 #calandarList = getGoogleCalanderItem()
 print (playBackInfo)
 
@@ -177,14 +201,14 @@ def mainThread():
                 time.sleep( 1 )
             else:
                 break
-            #if x % 20 == 0:
-            #    getPlaybackData()
+            if x % 20 == 0:
+                getPlaybackData()
+                getUserDevices()
         print ("Refreshing Token")
         refreshToken()
 
 newthread = threading.Thread(target = mainThread)
 newthread.start() 
-
 class VolumePopup(Popup):
 
     def __init__(self,screen,**kwargs):
@@ -323,21 +347,36 @@ class HomeScreen(Screen):
         newthread.start()
 
     def btn_play(self):
+        def Play():
+            r = requests.put("https://api.spotify.com/v1/me/player/play", headers={'Authorization': token})
+            print(r.status_code, r.reason)
+        def Pause():
+            r = requests.put("https://api.spotify.com/v1/me/player/pause", headers={'Authorization': token})
+            print(r.status_code, r.reason)
         def thread():
             #Toggle Playback state
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
             try:
+                r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
                 playing = r.json()['is_playing']
                 if playing: 
-                    r = requests.put("https://api.spotify.com/v1/me/player/pause", headers={'Authorization': token})
-                    print(r.status_code, r.reason)
-                    print(r.text[:300] + '...')
+                    Pause()
                 else:
-                    r = requests.put("https://api.spotify.com/v1/me/player/play", headers={'Authorization': token})
-                    print(r.status_code, r.reason)
-                    print(r.text[:300] + '...')
+                    Play()
             except:
-                print("Nothing Playing")
+                print ("Nothing Playing trying to play on favorite device")
+                payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
+                r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                time.sleep( 1 )
+                try:
+                    r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+                    playing = r.json()['is_playing']
+                    if playing: 
+                        Pause()
+                    else:
+                        Play()
+                except:
+                    print ("No Devices")
                 return
 
         newthread = threading.Thread(target = thread)
@@ -451,6 +490,11 @@ class HomeScreen(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
+    def btn_saveCast(self):
+        r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=HandleSaveRequest&computer=NickDesktop", data={'token': triggerToken})
+        print(r.status_code, r.reason)
+        print(r.text[:300] + '...')
+
     def btn_considerPlaylist(self):
         def thread():
             #Play consider playlist
@@ -462,8 +506,6 @@ class HomeScreen(Screen):
         newthread = threading.Thread(target = thread)
         newthread.start()
 
-    def btn_trainTimetable(self):
-        webbrowser.open('https://anytrip.com.au/stop/au2:206020')
     pass
 
 class HomeScreen2(Screen):
@@ -472,32 +514,6 @@ class HomeScreen2(Screen):
         global running
         running = 0
         App.get_running_app().stop()
-
-    def btn_discoverWeeklyPlaylist(self):
-        def thread():
-            #Play discoverWeekly playlist
-            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:37i9dQZEVXcWS97182mQq0'}
-            r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})  
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')  
-            time.sleep( 1 )
-            r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            print(r.status_code, r.reason)
-            print(r.text[:300] + '...')  
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-   
-    def btn_tableTopPlaylist(self):
-        def thread():
-            #Play discoverWeekly playlist
-            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:28uPKzcnErsq2OMG7EvqrG'}
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            time.sleep( 1 )
-            requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
 
     def btn_slack(self):
         #IFTTT Post to Slack
@@ -510,16 +526,58 @@ class HomeScreen2(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
+    def btn_trainTimetable(self):
+        webbrowser.open('https://anytrip.com.au/stop/au2:206020')
+
     pass
 
 class DevicesPage(BoxLayout):
     def __init__(self,screen,name,**kwargs):
         super(DevicesPage,self).__init__(**kwargs)
         self.rv.viewclass.screen = screen
+        self.rv.viewclass.page = self
         self.name = name
+        self.display.text = ''
 
     def populate(self, listDict):
         self.rv.data = [{'value': x} for x in listDict.keys()]
+
+    def refresh(self):
+        getUserDevices()
+        self.populate(devicesDict)
+        #WIP
+    def device(self, name):
+        def thread():
+            print (self.display.text)
+            devicepath = 'favoriteDevice.txt'
+            playlistPath = "favoritePlaylist.txt"
+            if(self.display.text == 'Favorite'):
+                try:
+                    os.remove(devicepath)
+                except:
+                    print ("test")
+                f=open(devicepath, "a+")
+                f.write(name)
+                self.display.text = ''
+                f.close
+            else:
+                payload = {'device_ids':[devicesDict[name]]}
+                print(payload)
+                r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                print(r.status_code, r.reason)
+                #Play on fav Playlist
+                if os.path.isfile(playlistPath):
+                    time.sleep( 1 )
+                    payload = {'context_uri': 'spotify:user:' + userId + ':playlist:' + getFavoritePlaylist()}
+                    print (payload)
+                    r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                    print(r.status_code, r.reason)
+                    time.sleep( 1 )
+                    r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+                    print(r.status_code, r.reason)
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
 
     pass
 
@@ -527,10 +585,45 @@ class PlaylistPage(BoxLayout):
     def __init__(self,screen,name,**kwargs):
         super(PlaylistPage,self).__init__(**kwargs)
         self.rv.viewclass.screen = screen
+        self.rv.viewclass.page = self
         self.name = name
+        self.entry = ''
+        self.display.text = ''
 
     def populate(self, listDict):
         self.rv.data = [{'value': x} for x in listDict.keys()]
+
+    def refresh(self):
+        getUserPlaylists()
+        self.populate(playlistDict)
+
+    def playlist(self, name):
+        def thread():
+            print (self.display.text)
+            playlistPath = "favoritePlaylist.txt"
+            if(self.display.text == 'Favorite'):
+                try:
+                    os.remove(playlistPath)
+                except:
+                    print ("test")
+
+                f=open(playlistPath, "a+")
+                f.write(playlistDict[name])
+                self.display.text = ''
+                f.close
+            else:
+                if (playBackInfo['device'] == ''):
+                    payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
+                    r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                    print(r.status_code, r.reason)
+                    time.sleep( 1 )
+                payload = {'context_uri': 'spotify:user:' + userId + ':playlist:' + playlistDict[name]}
+                requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
+                time.sleep( 1 )
+                requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
 
     pass
 
@@ -558,16 +651,7 @@ class PlaylistScreen(Screen):
         self.playListsPage = PlaylistPage(self, 'Playlists')
         self.playListsPage.populate(playlistDict)
         self.add_widget(self.playListsPage)
-
-    def playlist(self, name):
-        def thread():
-            payload = {'context_uri': 'spotify:user:' + userId + ':playlist:' + playlistDict[name]}
-            requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            time.sleep( 1 )
-            requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
+        self.playListsPage.entry = ''
 
     pass
 
@@ -578,29 +662,11 @@ class DevicesScreen(Screen):
         self.devicesPage.populate(devicesDict)
         self.add_widget(self.devicesPage)
 
-    #WIP
-    def device(self, id):
-        def thread():
-            payload = {'device_ids':[devicesDict[id]]}
-            print(payload)
-            r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
-            print(r.status_code, r.reason)
-            #Play on New Device
-            #time.sleep( 1 )
-            #payload = {'context_uri': 'spotify:user:' + userId + ':playlist:1T6JGyXUm28pTaSJqH8ovz'}
-            #r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
-            #print(r.status_code, r.reason)
-            #time.sleep( 1 )
-            #r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
-            #print(r.status_code, r.reason)
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-
     pass
 
 class LockScreen(Screen): 
     def btn_checkInput(self, input):
+        print (input)
         if input == '4444':
             print('Correct')
             sm.current = 'home'
@@ -609,7 +675,9 @@ class LockScreen(Screen):
     pass
 
 # Create the screen manager
+print ("Before SM")
 sm = ScreenManager()
+print ("After SM")
 sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(HomeScreen2(name='home2'))

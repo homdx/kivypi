@@ -10,3 +10,5 @@ client_secret.json
 credentials.json
 studentdb.kv
 studentdb.py
+favoritePlaylist.txt
+favoriteDevice.txt
