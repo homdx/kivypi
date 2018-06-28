@@ -93,7 +93,7 @@ def setVolume(volume):
             volume = int(volume) / 5
         print (volume)
         r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-        playBackInfo['volume'] = volume
+        playBackInfo['volume'] = str(volume)
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
     except:
@@ -193,7 +193,10 @@ def updateLocalMedia(local_ms):
     playBackInfo['progress_ms'] = int(local_ms)
     playBackInfo['seekPos'] = (float(local_ms) / float(playBackInfo['duration_ms']) * 100)
     #Currently hardcoded to Main screen, may need to pass the screen to update later
-    sm.screens[1].update()
+    try:
+        sm.get_screen('home').update()
+    except Exception as e:
+        print ("No such screen: " + str(e.message))
 
 refreshToken()
 getPlaybackData()
@@ -213,8 +216,12 @@ def mainThread():
             else:
                 break
             if x % 5 == 0:
-                getPlaybackData()
-                sm.screens[1].update()
+                try:
+                    getPlaybackData()
+                    sm.get_screen('home').update()
+                except Exception as e:
+                    print ("No such screen: " + str(e.message))
+                    
             if x % 20 == 0:
                 getUserDevices()
         print ("Refreshing Token")
@@ -331,19 +338,23 @@ class HomeScreen(Screen):
                         #This can be refined later
                         print ("Paused after wait (presume that 500ms has passed)")
                         increment = 500
-                    else:
-                        localProgess_ms = playBackInfo['progress_ms'] + increment
-                        updateLocalMedia(localProgess_ms)
+                    localProgess_ms = int(playBackInfo['progress_ms']) + increment
+                    if (int(localProgess_ms) > int(playBackInfo['duration_ms'])):
+                        print ("HERE")
+                        localProgess_ms = localProgess_ms - int(playBackInfo['duration_ms'])
+                        if (localProgess_ms < 0):
+                            localProgess_ms = 0
+                    updateLocalMedia(localProgess_ms)    
                     
         newthread = threading.Thread(target = thread)
         newthread.start()
 
     def update(self):
         def thread():
-            self.volume_buttonText = playBackInfo['volume']
-            self.song_buttonText = playBackInfo['currentSong']
-            self.artist_buttonText = playBackInfo['currentArtist']
-            self.device_buttonText = playBackInfo['device']
+            self.volume_buttonText = str(playBackInfo['volume'])
+            self.song_buttonText = str(playBackInfo['currentSong'])
+            self.artist_buttonText = str(playBackInfo['currentArtist'])
+            self.device_buttonText = str(playBackInfo['device'])
             self.progress_buttonText = convertMs(playBackInfo['progress_ms'])
             self.seek_buttonText = str(playBackInfo['seekPos'])
             self.duration_buttonText = convertMs(playBackInfo['duration_ms'])

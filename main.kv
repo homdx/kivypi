@@ -5,7 +5,7 @@
 <CustLabel2@Label>:
     font_size: 14
     pos_hint: [None, None]
-    color: 0, 1, 0, 0.25
+    color: 1, 0.757, 0.145, 1
     size_hint: [.8,.8]
 
 <CustLabel@Label>:
@@ -148,6 +148,13 @@
             size_hint: None, .275
             width: 147.5
             on_press: root.manager.current = 'home2'
+            Image:
+                source: './Resources/whitearrow_right.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                size: 250, 250
+                allow_stretch: True
+                height: dp(120)
 
 <HomeScreen2>:
     StackLayout:
@@ -220,10 +227,17 @@
             size_hint: None, .235
             width: 147.5
         Button:
-            text: "Home Page"
+            text: "Previous Page"
             size_hint: None, .235
             width: 147.5
             on_press: root.manager.current = 'home'
+            Image:
+                source: './Resources/whitearrow_left.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                size: 250, 250
+                allow_stretch: True
+                height: dp(120)
         Button:
             text: root.button_text
             size_hint: None, .235
