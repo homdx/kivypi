@@ -213,78 +213,23 @@ def mainThread():
         for x in range(0, 600): 
             if (running):
                 time.sleep( 1 )
+                try:
+                    sm.get_screen('home').updateProgess()
+                except:
+                    print ("No such screen")
             else:
                 break
             if x % 5 == 0:
                 try:
                     getPlaybackData()
                     sm.get_screen('home').update()
-                except Exception as e:
+                except:
                     print ("No such screen")
                     
             if x % 20 == 0:
                 getUserDevices()
         print ("Refreshing Token")
         refreshToken()
-class VolumePopup(Popup):
-
-    def __init__(self,screen,**kwargs):
-        super(VolumePopup,self).__init__(**kwargs)
-        self.screen = screen
-        self.volume = playBackInfo['volume']
-    
-    def closeandUpdate(self):
-        def thread():
-            setVolume(self.screen.volume_buttonText)
-        self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-        self.dismiss()
-
-    def exitandUpdate(self):
-        def thread():
-            self.screen.volume_buttonText = playBackInfo['volume']
-        self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-        self.dismiss()
-
-    def btn_volDown(self):
-        def thread():
-            #Vol down*
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            try:
-                voldict = r.json()['device']
-                volume = voldict['volume_percent']
-                volume = int(volume) - 1
-                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-                global playBackInfo
-                playBackInfo['volume'] = str(volume)
-            except:
-                print("Nothing Playing")
-                return
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-
-    def btn_volUp(self):
-        def thread():
-            #Vol down
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            try:
-                voldict = r.json()['device']
-                volume = voldict['volume_percent']
-                volume = int(volume) + 1
-                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-                global playBackInfo
-                playBackInfo['volume'] = str(volume)
-            except:
-                print("Nothing Playing")
-                return
-
-        newthread = threading.Thread(target = thread)
-        newthread.start()
-
 
 # Declare screens
 class HomeScreen(Screen):
@@ -302,7 +247,6 @@ class HomeScreen(Screen):
         self.volPopup = VolumePopup(self)
         self.modifiedSlider = ModifiedSlider()
         self.modifiedSlider.bind(on_release=self.slider_release)
-        self.updateProgess()
 
     def slider_release(self, location):
         def thread():
@@ -311,10 +255,7 @@ class HomeScreen(Screen):
                 test = test * float(playBackInfo['duration_ms'])
                 seek = int(test)
                 requests.put("https://api.spotify.com/v1/me/player/seek?position_ms=" + str(seek), headers={'Authorization': token})
-                #global playBackInfo
-                #playBackInfo['seekPos'] = location
                 updateLocalMedia(seek)
-                #self.seek_buttonText = str(playBackInfo['seekPos'])
             except Exception as e:
                 print("Nothing Playing " + e.message)
                 return
@@ -323,28 +264,18 @@ class HomeScreen(Screen):
         newthread.start()
 
     def updateProgess(self):
-        def thread():
-            while(running):
-                if (running == 0):
-                    print ("breaking")
-                    break
-                if(playBackInfo['playing'] == 1):
-                    time.sleep( 1 )
-                    increment = 999
-                    if(playBackInfo['playing'] == 0):
-                        #This can be refined later
-                        print ("Paused after wait (presume that 500ms has passed)")
-                        increment = 500
-                    localProgess_ms = int(playBackInfo['progress_ms']) + increment
-                    if (int(localProgess_ms) > int(playBackInfo['duration_ms'])):
-                        print ("HERE")
-                        localProgess_ms = localProgess_ms - int(playBackInfo['duration_ms'])
-                        if (localProgess_ms < 0):
-                            localProgess_ms = 0
-                    updateLocalMedia(localProgess_ms)    
-                    
-        newthread = threading.Thread(target = thread)
-        newthread.start()
+        if(playBackInfo['playing'] == 1):
+            increment = 999
+            if(playBackInfo['playing'] == 0):
+                #This can be refined later
+                print ("Paused after wait (presume that 500ms has passed)")
+                increment = 500
+            localProgess_ms = int(playBackInfo['progress_ms']) + increment
+            if (int(localProgess_ms) > int(playBackInfo['duration_ms'])):
+                localProgess_ms = localProgess_ms - int(playBackInfo['duration_ms'])
+                if (localProgess_ms < 0):
+                    localProgess_ms = 0
+            updateLocalMedia(localProgess_ms)
 
     def update(self):
         def thread():
@@ -546,6 +477,65 @@ class HomeScreen2(Screen):
         webbrowser.open('https://anytrip.com.au/stop/au2:206020')
 
     pass
+
+class VolumePopup(Popup):
+
+    def __init__(self,screen,**kwargs):
+        super(VolumePopup,self).__init__(**kwargs)
+        self.screen = screen
+        self.volume = playBackInfo['volume']
+    
+    def closeandUpdate(self):
+        def thread():
+            setVolume(self.screen.volume_buttonText)
+        self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+        self.dismiss()
+
+    def exitandUpdate(self):
+        def thread():
+            self.screen.volume_buttonText = playBackInfo['volume']
+        self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+        self.dismiss()
+
+    def btn_volDown(self):
+        def thread():
+            #Vol down*
+            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+            try:
+                voldict = r.json()['device']
+                volume = voldict['volume_percent']
+                volume = int(volume) - 1
+                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+                global playBackInfo
+                playBackInfo['volume'] = str(volume)
+            except:
+                print("Nothing Playing")
+                return
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+
+    def btn_volUp(self):
+        def thread():
+            #Vol down
+            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+            try:
+                voldict = r.json()['device']
+                volume = voldict['volume_percent']
+                volume = int(volume) + 1
+                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
+                global playBackInfo
+                playBackInfo['volume'] = str(volume)
+            except:
+                print("Nothing Playing")
+                return
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
 
 class ModifiedSlider(Slider):
     def __init__(self, **kwargs):
