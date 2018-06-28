@@ -46,7 +46,7 @@ sRefreshToken = lines[1]
 triggerToken = lines[2]
 
 token = ''
-playBackInfo = {"playing": '', "volume": '', "device": '', "deviceType": '', "shuffling": '', "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
+playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
 devicesDict = {}
 playlistDict = {}
 running = 1
@@ -81,7 +81,7 @@ def getPlaybackData():
         print (playBackInfo)
     except Exception as e:
         print("Nothing Playing " + str(e.message))
-        playBackInfo['playing'] = 'false'
+        playBackInfo['playing'] = False
         playBackInfo['device'] = ''
         playBackInfo['deviceType'] = ''
         print (playBackInfo)
@@ -220,15 +220,12 @@ def mainThread():
                     getPlaybackData()
                     sm.get_screen('home').update()
                 except Exception as e:
-                    print ("No such screen: " + str(e.message))
+                    print ("No such screen")
                     
             if x % 20 == 0:
                 getUserDevices()
         print ("Refreshing Token")
         refreshToken()
-
-newthread = threading.Thread(target = mainThread)
-newthread.start() 
 class VolumePopup(Popup):
 
     def __init__(self,screen,**kwargs):
@@ -452,12 +449,12 @@ class HomeScreen(Screen):
             r = requests.put("https://api.spotify.com/v1/me/player/play", headers={'Authorization': token})
             print(r.status_code, r.reason)
             global playBackInfo
-            playBackInfo['playing'] = 'True'
+            playBackInfo['playing'] = True
         def Pause():
             r = requests.put("https://api.spotify.com/v1/me/player/pause", headers={'Authorization': token})
             print(r.status_code, r.reason)
             global playBackInfo
-            playBackInfo['playing'] = 'False'
+            playBackInfo['playing'] = False
         def thread():
             #Toggle Playback state
             try:
@@ -722,6 +719,11 @@ sm.add_widget(HomeScreen2(name='home2'))
 sm.add_widget(CalandarScreen(name='calandar'))
 sm.add_widget(PlaylistScreen(name='playlists'))
 sm.add_widget(DevicesScreen(name='devices'))
+
+#Start thread after start
+newthread = threading.Thread(target = mainThread)
+newthread.start() 
+
 class PiDemoApp(App):
 
     def build(self):
