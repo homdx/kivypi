@@ -1,11 +1,14 @@
-import git
+import os
 
-def run(runfile):
-  with open(runfile,"r") as rnf:
-    exec(rnf.read())
+os.chdir(os.path.dirname(__file__))
+print("Current folder: " + os.getcwd())
 
-git_dir = "/home/pi/kivypi"
-g = git.cmd.Git(git_dir)
-g.pull()
+try:
+  import git
+  git_dir = os.getcwd()
+  g = git.cmd.Git(git_dir)
+  g.pull()
+except Exception as e:
+  print("unable to pull latest version: " + e.message)
 
-run("main.py")
+execfile("main.py")
