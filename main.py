@@ -80,7 +80,11 @@ def getPlaybackData():
         playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": deviceType, "shuffling": shuffling, "currentSong": currentSong, "currentArtist": currentArtist, "progress_ms": progress_ms, "duration_ms": duration_ms, "seekPos": seekPos}
         print (playBackInfo)
     except Exception as e:
-        print("Nothing Playing " + str(e.message))
+        print("Nothing Playing:")
+        try:
+            print(e.message)
+        except:
+            print("Unhandled Error")
         playBackInfo['playing'] = False
         playBackInfo['device'] = ''
         playBackInfo['deviceType'] = ''
@@ -219,7 +223,7 @@ def mainThread():
                     print ("No such screen")
             else:
                 break
-            if x % 5 == 0:
+            if x % 10 == 0:
                 try:
                     getPlaybackData()
                     sm.get_screen('home').update()
