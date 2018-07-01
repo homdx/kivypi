@@ -52,11 +52,14 @@ playlistDict = {}
 running = 1
 
 def refreshToken():
-    global token
-    r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
-    print(r.status_code, r.reason)
-    print(r.text[:300] + '...')
-    token = 'Bearer ' + r.json()['access_token']
+    try:
+        global token
+        r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
+        print(r.status_code, r.reason)
+        print(r.text[:300] + '...')
+        token = 'Bearer ' + r.json()['access_token']
+    except:
+        print ("Error getting new token")
 
 def getPlaybackData():
     try:
@@ -150,12 +153,15 @@ def getUserPlaylists():
         return
         
 def getUserDevices():
-        global devicesDict
-        r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
-        devicesDict = {}
-        devices = r.json()['devices']
-        for device in devices:
-            devicesDict[str(device['name'])] = str(device['id'])
+        try:
+            global devicesDict
+            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+            devicesDict = {}
+            devices = r.json()['devices']
+            for device in devices:
+                devicesDict[str(device['name'])] = str(device['id'])
+        except:
+            print ('No Devices')
     
 def getGoogleCalanderItem():
         # Setup the Calendar API
@@ -220,7 +226,7 @@ def mainThread():
                 try:
                     sm.get_screen('home').updateProgess()
                 except:
-                    print ("No such screen")
+                    print ("No such screen / error updating progress")
             else:
                 break
             if x % 10 == 0:
@@ -228,7 +234,7 @@ def mainThread():
                     getPlaybackData()
                     sm.get_screen('home').update()
                 except:
-                    print ("No such screen")
+                    print ("No such screen / error updating screen")
                     
             if x % 20 == 0:
                 getUserDevices()
