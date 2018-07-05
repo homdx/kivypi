@@ -526,7 +526,7 @@ class HomeScreen(Screen):
     def btn_startCastAll(self):
 
         def thread():
-            filename = "YTTopWeek_All"
+            filename = "YTTopWeek_All.txt"
 
             with open(filename) as f:
                 lines = f.readlines()
