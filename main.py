@@ -216,6 +216,9 @@ def updateLocalMedia(local_ms):
 def find_from( s, start):
     return s.split(start,1)[1].rstrip()
 
+def find_previous( s, start):
+    return s.split(start,1)[0].rstrip()
+
 def find_between( s, first, last ):
     try:
         start = s.index( first ) + len( first )
@@ -469,6 +472,83 @@ class HomeScreen(Screen):
                     thislist.append(find_from(x, 'be/'))
                 elif('v=' in x):
                     thislist.append(find_from(x, 'v='))
+                else:
+                    print("Invalid url: " + x)
+
+            print (str(thislist))
+
+            # Triggers program exit
+            shutdown = Event()
+
+            def signal_handler(x,y):
+                shutdown.set()
+
+            chromecasts = pychromecast.get_chromecasts()
+            print([cc.device.friendly_name for cc in chromecasts])
+
+            cast = next(cc for cc in chromecasts if cc.device.friendly_name == "TV")
+            # Wait for cast device to be ready
+            cast.wait()
+            print(cast.device)
+            #DeviceStatus(friendly_name='Living Room', model_name='Chromecast', manufacturer='Google Inc.', uuid=UUID('df6944da-f016-4cb8-97d0-3da2ccaa380b'), cast_type='cast')
+
+            print(cast.status)
+            #CastStatus(is_active_input=True, is_stand_by=False, volume_level=1.0, volume_muted=False, app_id='CC1AD845', display_name='Default Media Receiver', namespaces=['urn:x-cast:com.google.cast.player.message', 'urn:x-cast:com.google.cast.media'], session_id='CCA39713-9A4F-34A6-A8BF-5D97BE7ECA5C', transport_id='web-9', status_text='')
+
+            mc = cast.media_controller
+
+            youtube_id = 'fXHTJ5v4B5I'
+
+            # Initialize a connection to the Chromecast
+            #cast = pychromecast.get_chromecast(friendly_name=cast_device)
+
+            # Create and register a YouTube controller
+            yt = YouTubeController()
+            cast.register_handler(yt)
+
+            # Play the video ID we've been given
+            yt.play_video(thislist[0])
+            thislist.remove(thislist[0])
+
+            for x in thislist:
+                yt.add_to_queue(x)
+
+            # Wait for a signal that we should shut down
+            while not shutdown.is_set():
+                time.sleep(1)
+
+            print("Stopping stream...")
+            cast.quit_app()
+
+        newthread = threading.Thread(target = thread)
+        newthread.start()
+
+    def btn_startCastAll(self):
+
+        def thread():
+            filename = "YTTopWeek_All"
+
+            with open(filename) as f:
+                lines = f.readlines()
+
+            urlDict = {}
+            for x in lines:
+                try:
+                    urlDict[find_from(x,',')] = int(find_previous(x,','))
+                except:
+                    print('invalid')
+
+            #sorted_x = sorted(urlDict.items(), reverse=True,  key=operator.itemgetter(1))
+            sorted_x = sorted(urlDict.items(), reverse=True,  key=lambda x: x[1])
+            thislist = []
+
+            for x in sorted_x:
+                if ('&' in x[0]):
+                    thislist.append(find_between(x[0], 'v=', '&'))
+                elif('be/' in x[0]):
+                    thislist.append(find_from(x[0], 'be/'))
+                elif('v=' in x[0]):
+                    thislist.append(find_from(x[0], 'v='))
                 else:
                     print("Invalid url: " + x)
 
