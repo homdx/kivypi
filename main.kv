@@ -112,10 +112,15 @@
             width: 147.5
             on_release: root.volPopup.open()
         Button:
-            text: "Start Cast"
+            text: "Lock"
             size_hint: None, .275
             width: 147.5
-            on_press: root.btn_startCast();
+            on_press: root.manager.current = 'lock'
+        Button:
+            text: "\n\n\n\n\nTop Today"
+            size_hint: None, .275
+            width: 147.5
+            on_press: root.btn_startCast('day');
             Image:
                 source: './Resources/yt.png'
                 center_x: self.parent.center_x
@@ -124,23 +129,41 @@
                 allow_stretch: True
                 height: dp(120)
         Button:
-            text: "Cast ALL\n from Previous weeks"
+            text: "\n\n\n\n\nTop Week"
+            size_hint: None, .275
+            width: 147.5
+            on_press: root.btn_startCast('week');
+            Image:
+                source: './Resources/yt.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                size: 250, 250
+                allow_stretch: True
+                height: dp(120)
+        Button:
+            text: "\n\n\n\n\nTop Month"
+            size_hint: None, .275
+            width: 147.5
+            on_press: root.btn_startCast('month');
+            Image:
+                source: './Resources/yt.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                size: 250, 250
+                allow_stretch: True
+                height: dp(120)
+        Button:
+            text: "\n\n\n\n\nPrevious Weeks"
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_startCastAll();
-        Button:
-            text: "Flag as\n Unpopular - WIP"
-            size_hint: None, .275
-            width: 147.5
-        Button:
-            text: "Save Latest\n Cast - WIP"
-            size_hint: None, .275
-            width: 147.5
-        Button:
-            text: "Lock"
-            size_hint: None, .275
-            width: 147.5
-            on_press: root.manager.current = 'lock'
+            Image:
+                source: './Resources/yt.png'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                size: 250, 250
+                allow_stretch: True
+                height: dp(120)
         Button:
             text: "Next Page"
             size_hint: None, .275
@@ -225,15 +248,15 @@
             size_hint: None, .235
             width: 147.5
         Button:
-            text: "Exit"
-            size_hint: None, .235
-            width: 147.5
-            on_press: root.btn_exit();
-        Button:
             text: root.button_text
             size_hint: None, .235
             width: 147.5
             on_press: root.button_text = root.btn_checkIP();
+        Button:
+            text: "Exit"
+            size_hint: None, .235
+            width: 147.5
+            on_press: root.btn_exit();
         Button:
             text: "Lock PC"
             size_hint: None, .235
@@ -250,7 +273,7 @@
             width: 147.5
             on_press: root.manager.current = 'home'
             Image:
-                source: './Resources/whitearrow_left.png'
+                source: './Resources/whitearrow_right.png'
                 center_x: self.parent.center_x
                 center_y: self.parent.center_y
                 size: 250, 250

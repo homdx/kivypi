@@ -455,27 +455,63 @@ class HomeScreen(Screen):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
 
-    def btn_startCast(self):
+    def btn_startCast(self, rType):
 
         def thread():
-            filename = "YTTopWeek.txt"
 
-            with open(filename) as f:
-                lines = f.readlines()
+            def checkLast(last, x, num):
+                if(last == ''):
+                    print ('error: ' + x + " :" + str(num))
+
+            def f(x):
+                return {
+                'month': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=month&limit=100",
+                'week': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=week&limit=100",
+                'day': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100"
+                }.get(x, "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100") 
+
+            request = f(rType)
+
+            print (request)
 
             thislist = []
-
-            for x in lines:
-                if ('&' in x):
+                    
+            r = requests.get(request, headers={'cache-control': 'no-cache', 'user-agent': 'PostmanRuntime/7.1.5'})
+            #print (r.code)
+            if ('message' in r.json()):
+                print (r.json()['message'])
+            data2 = r.json()['data']
+            children = data2['children']
+            for c in children:
+                innerData = c['data']
+                x = innerData['url']
+                x = x.replace('%26', '&')
+                x = x.replace('%3D', '=')
+                if ('?start' in x):
+                    print ('Skipping vid: ' + x)
+                    continue
+                elif ('attribution_link' in x):
                     thislist.append(find_between(x, 'v=', '&'))
+                    checkLast(thislist[-1], x, 1)
+                    continue
+                elif('?t=' in x):
+                    thislist.append(find_between(x, 'be/', '?'))
+                    checkLast(thislist[-1], x, 3)
+                    continue
+                elif ('&' in x):
+                    thislist.append(find_between(x, 'v=', '&'))
+                    checkLast(thislist[-1], x, 2)
+                    continue
                 elif('be/' in x):
                     thislist.append(find_from(x, 'be/'))
+                    checkLast(thislist[-1], x, 4)
+                    continue
                 elif('v=' in x):
                     thislist.append(find_from(x, 'v='))
+                    checkLast(thislist[-1], x, 5)
+                    continue
                 else:
                     print("Invalid url: " + x)
-
-            print (str(thislist))
 
             # Triggers program exit
             shutdown = Event()
@@ -497,8 +533,6 @@ class HomeScreen(Screen):
 
             mc = cast.media_controller
 
-            youtube_id = 'fXHTJ5v4B5I'
-
             # Initialize a connection to the Chromecast
             #cast = pychromecast.get_chromecast(friendly_name=cast_device)
 
@@ -512,13 +546,6 @@ class HomeScreen(Screen):
 
             for x in thislist:
                 yt.add_to_queue(x)
-
-            # Wait for a signal that we should shut down
-            while not shutdown.is_set():
-                time.sleep(1)
-
-            print("Stopping stream...")
-            cast.quit_app()
 
         newthread = threading.Thread(target = thread)
         newthread.start()
@@ -574,8 +601,6 @@ class HomeScreen(Screen):
 
             mc = cast.media_controller
 
-            youtube_id = 'fXHTJ5v4B5I'
-
             # Initialize a connection to the Chromecast
             #cast = pychromecast.get_chromecast(friendly_name=cast_device)
 
@@ -589,13 +614,6 @@ class HomeScreen(Screen):
 
             for x in thislist:
                 yt.add_to_queue(x)
-
-            # Wait for a signal that we should shut down
-            while not shutdown.is_set():
-                time.sleep(1)
-
-            print("Stopping stream...")
-            cast.quit_app()
 
         newthread = threading.Thread(target = thread)
         newthread.start()
