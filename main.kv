@@ -14,6 +14,27 @@
     color: 1, 0.757, 0.145, 1
     size_hint: [.8,.8]
 
+<CustLabel@Label>:
+    font_size: 11
+    pos_hint: [None, None]
+    color: 1, 0.757, 0.145, 1
+    size_hint: [.8,.8]
+
+<CustButton@Button>:
+    text: ""
+    padding_x: self.width
+    font_name: "LemonMilk.otf"
+    bold: "True"
+    font_size: 22
+    color: 1, 1, 1, 1
+    bcolor: 0, 0, 0, 1
+    canvas.before:
+        Color:
+            rgba: self.bcolor
+        Rectangle:
+            pos: self.pos
+            size: self.size
+
 <ModifiedSlider>:
     text: "Progress"
 
@@ -22,16 +43,22 @@
         orientation: "lr-tb"
         spacing: 10
         padding: 10
+        canvas.before:
+            Color:
+                rgba: .18, .18, .18, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
     
         # size_hint defines the percentage of space taken on the
         # x access and the percentage of space left over by the
         # other widgets
-        Button:
+        CustButton:
             text: "Shuffle\n" + root.shufflestate_buttonText
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_shuffle();
-        Button:
+        CustButton:
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_previous();
@@ -43,7 +70,7 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
+        CustButton:
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_play();
@@ -54,7 +81,7 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
+        CustButton:
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_next();
@@ -65,7 +92,7 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
+        CustButton:
             text: "Skip 30s"
             size_hint: None, .275
             width: 147.5
@@ -91,33 +118,33 @@
             text: "Current Device:\n" + root.device_buttonText
             size_hint: None, .117
             width: 147.5
-        Button:
+        CustButton:
             text: "Playlists"
             size_hint: None, .275
             width: 147.5
             on_press: root.manager.current = 'playlists'
-        Button:
+        CustButton:
             text: "Devices"
             size_hint: None, .275
             width: 147.5
             on_press: root.manager.current = 'devices'
-        Button:
-            text: "Add Current Playing\n to Favorite Playlist"
+        CustButton:
+            text: "Add to\nFavorite"
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_addCurrentPlaying();
-        Button:
+        CustButton:
             text: "Volume: " + root.volume_buttonText
             size_hint: None, .275
             width: 147.5
             on_release: root.volPopup.open()
-        Button:
+        CustButton:
             text: "Lock"
             size_hint: None, .275
             width: 147.5
             on_press: root.manager.current = 'lock'
-        Button:
-            text: "\n\n\n\n\nTop Today"
+        CustButton:
+            text: "\n\n\nTop Today"
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_startCast('day');
@@ -128,8 +155,8 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
-            text: "\n\n\n\n\nTop Week"
+        CustButton:
+            text: "\n\n\nTop Week"
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_startCast('week');
@@ -140,8 +167,8 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
-            text: "\n\n\n\n\nTop Month"
+        CustButton:
+            text: "\n\n\nTop Month"
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_startCast('month');
@@ -152,8 +179,8 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
-            text: "\n\n\n\n\nPrevious Weeks"
+        CustButton:
+            text: "\n\n\nHistory"
             size_hint: None, .275
             width: 147.5
             on_press: root.btn_startCastAll();
@@ -164,8 +191,7 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-        Button:
-            text: "Next Page"
+        CustButton:
             size_hint: None, .275
             width: 147.5
             on_press: root.manager.current = 'home2'
@@ -185,89 +211,89 @@
         # size_hint defines the percentage of space taken on the
         # x access and the percentage of space left over by the
         # other widgets
-        Button:
+        CustButton:
             text: "Plex - Expanse\nWIP"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "Plex - Westworld\nWIP"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "Google Calander\nWIP"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "Home API\nWIP"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "Office 365 API\nWIP"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "Train Timetable\nBrowser Only"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_trainTimetable();
-        Button:
+        CustButton:
             text: "Google Calander"
             size_hint: None, .235
             width: 147.5
             on_release: root.manager.current = 'calandar'
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: "TBA"
             size_hint: None, .235
             width: 147.5
-        Button:
+        CustButton:
             text: root.button_text
             size_hint: None, .235
             width: 147.5
             on_press: root.button_text = root.btn_checkIP();
-        Button:
+        CustButton:
             text: "Exit"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_exit();
-        Button:
+        CustButton:
             text: "Lock PC"
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_lockPC();
-        Button:
+        CustButton:
             text: "Lock"
             size_hint: None, .235
             width: 147.5
             on_press: root.manager.current = 'lock'
-        Button:
+        CustButton:
             text: "Previous Page"
             size_hint: None, .235
             width: 147.5
@@ -485,11 +511,11 @@
         title: "Volume Page"
         orientation: "vertical"
         Button:
-            text: "-1"
-            on_release: root.btn_volDown()
-        Button:
             text: "+1"
             on_release: root.btn_volUp()
+        Button:
+            text: "-1"
+            on_release: root.btn_volDown()
         Slider:
             text: "Select Volume"
             on_value: root.screen.volume_buttonText = str(self.value)

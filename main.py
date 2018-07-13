@@ -10,6 +10,7 @@ import socket
 import pychromecast
 import signal
 import argparse
+import kivy.utils
 from threading import Event
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
@@ -270,6 +271,7 @@ class HomeScreen(Screen):
     seek_buttonText = StringProperty(str(playBackInfo['seekPos']))
     duration_buttonText = StringProperty(convertMs(playBackInfo['duration_ms']))
     shufflestate_buttonText = StringProperty(str(playBackInfo['shuffling']))
+    color = StringProperty(kivy.utils.get_color_from_hex('#FFFFF'))
 
     def __init__(self,**kwargs): 
         super(HomeScreen,self).__init__(**kwargs)
@@ -622,7 +624,7 @@ class HomeScreen(Screen):
         r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=HandlePlayRequest&computer=NickDesktop", data={'token': triggerToken})
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
-
+ 
     def btn_pauseCast(self):
         r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=HandlePauseRequest&computer=NickDesktop", data={'token': triggerToken})
         print(r.status_code, r.reason)
