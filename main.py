@@ -33,6 +33,8 @@ from kivy.uix.popup import Popup
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.listview import ListView
+from kivy.uix.label import Label
+from kivy.uix.button import Button
 from kivy.base import runTouchApp
 
 os.chdir(os.path.dirname(__file__))
@@ -71,33 +73,55 @@ def getPlaybackData():
     try:
         global playBackInfo
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token, 'nocache': ''})
-        deviceData = r.json()['device']
-        item = r.json()['item']
-        artist = item['artists']
-
-        playing = r.json()['is_playing']
-        volume = str(deviceData['volume_percent'])
-        device = str(deviceData['name'])
-        deviceType = str(deviceData['type'])
-        shuffling = r.json()['shuffle_state']
-        currentSong = str(item['name'])
-        currentArtist = str(artist[0]['name'])
-        progress_ms = r.json()['progress_ms']
-        duration_ms = str(item['duration_ms'])
-        seekPos = (float(r.json()['progress_ms']) / float(item['duration_ms']) * 100)
+        if (r.status_code == 204):
+            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+            return
+        volume = ''
+        device = ''
+        deviceType = ''
+        currentSong = ''
+        duration_ms = 0
+        artist = ''
+        currentArtist = ''
+        playing = False
+        shuffling = False
+        progress_ms = 0
+        seekPos = 0
+        
+        if ('device' in r.json()):
+            deviceData = r.json()['device']
+            volume = str(deviceData['volume_percent'])
+            device = str(deviceData['name'])
+            deviceType = str(deviceData['type'])
+            
+        if ('item' in r.json() and r.json()['item'] != None):
+            item = r.json()['item']
+            currentSong = str(item['name'])
+            duration_ms = str(item['duration_ms'])
+            artist = item['artists']
+            currentArtist = str(artist[0]['name'])
+        try:
+            playing = r.json()['is_playing']
+            shuffling = r.json()['shuffle_state']
+            progress_ms = r.json()['progress_ms']
+            if ('item' in r.json() and r.json()['item'] != None):
+                seekPos = (float(progress_ms) / float(item['duration_ms']) * 100)
+        except:
+            print ('Error')
 
         playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": deviceType, "shuffling": shuffling, "currentSong": currentSong, "currentArtist": currentArtist, "progress_ms": progress_ms, "duration_ms": duration_ms, "seekPos": seekPos}
-        print (playBackInfo)
+        try:
+            print (playBackInfo)
+        except:
+            print ('Cant print playback')
     except Exception as e:
         print("Nothing Playing:")
         try:
             print(e.message)
         except:
-            print("Unhandled Error")
-        playBackInfo['playing'] = False
-        playBackInfo['device'] = ''
-        playBackInfo['deviceType'] = ''
-        print (playBackInfo)
+            print('Unhandled error')
+        playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+        #print (playBackInfo)
 
 def setVolume(volume):
     try:
@@ -123,7 +147,7 @@ def getUserInfo():
         print("Error getting user data")
         return
 
-def getFavoritePlaylist():
+def getFavoritePlaylist2():
     try:
         path = 'favoritePlaylist.txt'
         f=open(path, "r")
@@ -133,7 +157,15 @@ def getFavoritePlaylist():
     except:
         return 0
 
-def getFavoriteDevice():
+def getFavoritePlaylist():
+    try:
+        with open('prefs.json') as f:
+            data = json.load(f)
+            return data['favorites']['playlist']
+    except:
+        return 0
+
+def getFavoriteDevice2():
     try:
         path = 'favoriteDevice.txt'
         f=open(path, "r")
@@ -142,6 +174,53 @@ def getFavoriteDevice():
         return fav
     except:
         return 0
+
+def getFavoriteDevice():
+    try:
+        with open('prefs.json') as f:
+            data = json.load(f)
+            return data['favorites']['device']
+    except:
+        return 0
+
+def getFavoriteCastDevice2():
+    try:
+        path = 'favoriteCastDevice.txt'
+        f=open(path, "r")
+        fav = f.read()
+        f.close
+        return fav
+    except:
+        return 0
+
+def getFavoriteCastDevice():
+    try:
+        with open('prefs.json') as f:
+            data = json.load(f)
+            return data['favorites']['cast']
+    except:
+        return 0
+
+def setFavoriteDevice():
+    try:
+        with open('prefs.json', mode='w', encoding='utf-8') as f:
+            data = json.load(f)
+            return data.favorites.device
+    except:
+        return 0
+
+def setFavoriteCastDevice():
+    try:
+        with open('prefs.json', mode='w', encoding='utf-8') as f:
+            data = json.load(f)
+            return data.favorites.cast
+    except:
+        return 0
+
+def setFavoritePlaylist(input):
+    with open('prefs.json', mode='w', encoding='utf-8') as f:
+        entry = {'playlist': input,}
+        #feeds.append(entry)
 
 def getUserPlaylists():
     global playlistDict
@@ -167,7 +246,7 @@ def getUserDevices():
             for device in devices:
                 devicesDict[str(device['name'])] = str(device['id'])
         except:
-            print ('No Devices')
+            print ('Unable to get Devices')
     
 def getGoogleCalanderItem():
         # Setup the Calendar API
@@ -204,10 +283,14 @@ def convertMs(millis):
     minutes = int(minutes)
 
     return ("%d:%02d" % (minutes, seconds))
+
 def updateLocalMedia(local_ms):
     global playBackInfo
     playBackInfo['progress_ms'] = int(local_ms)
-    playBackInfo['seekPos'] = (float(local_ms) / float(playBackInfo['duration_ms']) * 100)
+    try:
+        playBackInfo['seekPos'] = (float(local_ms) / float(playBackInfo['duration_ms']) * 100)
+    except ZeroDivisionError:
+        playBackInfo['seekPos'] = 0
     #Currently hardcoded to Main screen, may need to pass the screen to update later
     try:
         sm.get_screen('home').update()
@@ -227,6 +310,16 @@ def find_between( s, first, last ):
         return s[start:end]
     except ValueError:
         return ""
+
+def alert(message):
+    #popup = Popup(content=Label(text=message), size_hint=(None, None), size=(400, 400))
+    content = Button(text='Close')
+    #content.add_widget(Label(text=message))
+    popup = Popup(title='Alert', content=content, size_hint=(None, None), size=(500, 500))
+
+    # bind the on_press event of the button to the dismiss function
+    content.bind(on_press=popup.dismiss)
+    popup.open()
 
 refreshToken()
 getPlaybackData()
@@ -253,8 +346,9 @@ def mainThread():
                 try:
                     getPlaybackData()
                     sm.get_screen('home').update()
-                except:
+                except Exception as e:
                     print ("No such screen / error updating screen")
+                    print (e.message)
                     
             if x % 20 == 0:
                 getUserDevices()
@@ -282,9 +376,9 @@ class HomeScreen(Screen):
     def slider_release(self, location):
         def thread():
             try:
-                test = float(location) / 100
-                test = test * float(playBackInfo['duration_ms'])
-                seek = int(test)
+                seekPos = float(location) / 100
+                seekPos = seekPos * float(playBackInfo['duration_ms'])
+                seek = int(seekPos)
                 requests.put("https://api.spotify.com/v1/me/player/seek?position_ms=" + str(seek), headers={'Authorization': token})
                 updateLocalMedia(seek)
             except Exception as e:
@@ -292,6 +386,7 @@ class HomeScreen(Screen):
                 return
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def updateProgess(self):
@@ -319,6 +414,7 @@ class HomeScreen(Screen):
             self.duration_buttonText = convertMs(playBackInfo['duration_ms'])
             self.shufflestate_buttonText = str(playBackInfo['shuffling'])
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_skip(self):
@@ -337,6 +433,7 @@ class HomeScreen(Screen):
                 return
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_addCurrentPlaying(self):
@@ -346,6 +443,9 @@ class HomeScreen(Screen):
             if (favPlaylist):
                 r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
                 try:
+                    if( r.status_code == 204 or r.json()['item'] == None):
+                        print ("Nothing playing")   
+                        return
                     items = r.json()['item']
                     trackId = items['id']
                     r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/" + favPlaylist, headers={'Authorization': token})
@@ -358,6 +458,7 @@ class HomeScreen(Screen):
                     return       
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_shuffle(self):
@@ -369,15 +470,17 @@ class HomeScreen(Screen):
                 r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=" + str(shuffleOn), headers={'Authorization': token})
                 print(r.status_code, r.reason)
                 print(r.text[:300] + '...')
+                if (r.status_code == 403):
+                    return
                 global playBackInfo
                 playBackInfo['shuffling'] = shuffleOn
                 self.shufflestate_buttonText = str(shuffleOn)
-                #self.update()
             except:
                 print("Nothing Playing")
                 return
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_previous(self):
@@ -388,9 +491,9 @@ class HomeScreen(Screen):
             print(r.text[:300] + '...')
             updateLocalMedia(0)
             #getPlaybackData()
-            #self.update()
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_next(self):
@@ -404,6 +507,7 @@ class HomeScreen(Screen):
             #self.update()
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_play(self):
@@ -421,30 +525,29 @@ class HomeScreen(Screen):
             #Toggle Playback state
             try:
                 r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-                playing = r.json()['is_playing']
+                if (r.status_code == 204 and getFavoriteDevice()):
+                    payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
+                    r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                    print(r.status_code, r.reason)
+                    time.sleep( 1 )
+                    r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+                    playing = r.json()['is_playing']
+                    return
+                else:
+                    playing = r.json()['is_playing']
                 if playing: 
                     Pause()
                 else:
                     Play()
-            except:
-                print ("Nothing Playing trying to play on favorite device")
-                payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
-                r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
-                print(r.status_code, r.reason)
-                time.sleep( 1 )
-                try:
-                    r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-                    playing = r.json()['is_playing']
-                    if playing: 
-                        Pause()
-                    else:
-                        Play()
-                except:
-                    print ("No Devices")
-                #self.update()
-                return
+            except KeyError as e:
+                print ('Unable to play on Favorite Device: ' + e.message)
+                alert('Unable to play on Favorite Device: ' + e.message)
+            except Exception as e:
+                print ("Error playing or no favorite Device: " + e.message)
+
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
         
     def btn_exit(self):
@@ -471,6 +574,10 @@ class HomeScreen(Screen):
                 'week': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=week&limit=100",
                 'day': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100"
                 }.get(x, "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100") 
+
+            if(not getFavoriteCastDevice()):
+                alert('Select a default Cast device in settings')
+                return
 
             request = f(rType)
 
@@ -524,7 +631,10 @@ class HomeScreen(Screen):
             chromecasts = pychromecast.get_chromecasts()
             print([cc.device.friendly_name for cc in chromecasts])
 
-            cast = next(cc for cc in chromecasts if cc.device.friendly_name == "TV")
+            if(len(chromecasts) == 0):
+                return
+
+            cast = next(cc for cc in chromecasts if cc.device.friendly_name == getFavoriteCastDevice())
             # Wait for cast device to be ready
             cast.wait()
             print(cast.device)
@@ -550,12 +660,17 @@ class HomeScreen(Screen):
                 yt.add_to_queue(x)
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_startCastAll(self):
 
         def thread():
             filename = "YTTopWeek_All.txt"
+
+            if(not getFavoriteCastDevice()):
+                alert('Select a default Cast device in settings')
+                return
 
             with open(filename) as f:
                 lines = f.readlines()
@@ -592,7 +707,10 @@ class HomeScreen(Screen):
             chromecasts = pychromecast.get_chromecasts()
             print([cc.device.friendly_name for cc in chromecasts])
 
-            cast = next(cc for cc in chromecasts if cc.device.friendly_name == "TV")
+            if(len(chromecasts) == 0):
+                return
+
+            cast = next(cc for cc in chromecasts if cc.device.friendly_name == "Chromecast")
             # Wait for cast device to be ready
             cast.wait()
             print(cast.device)
@@ -618,6 +736,7 @@ class HomeScreen(Screen):
                 yt.add_to_queue(x)
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_resumeCast(self):
@@ -650,11 +769,14 @@ class HomeScreen2(Screen):
         App.get_running_app().stop()
 
     def btn_checkIP(self):
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except:
+            return 'Cant Connect'
 
     def btn_slack(self):
         #IFTTT Post to Slack
@@ -684,6 +806,7 @@ class VolumePopup(Popup):
             setVolume(self.screen.volume_buttonText)
         self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
         self.dismiss()
 
@@ -692,6 +815,7 @@ class VolumePopup(Popup):
             self.screen.volume_buttonText = playBackInfo['volume']
         self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
         self.dismiss()
 
@@ -711,6 +835,7 @@ class VolumePopup(Popup):
                 return
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def btn_volUp(self):
@@ -729,6 +854,7 @@ class VolumePopup(Popup):
                 return
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
 class ModifiedSlider(Slider):
@@ -761,6 +887,7 @@ class DevicesPage(BoxLayout):
             getUserDevices()
             self.populate(devicesDict)
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
         #WIP
     def device(self, name):
@@ -793,6 +920,7 @@ class DevicesPage(BoxLayout):
                     print(r.status_code, r.reason)
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     pass
@@ -814,6 +942,7 @@ class PlaylistPage(BoxLayout):
             getUserPlaylists()
             self.populate(playlistDict)
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
 
     def playlist(self, name):
@@ -831,7 +960,7 @@ class PlaylistPage(BoxLayout):
                 self.display.text = ''
                 f.close
             else:
-                if (playBackInfo['device'] == '' and getFavoriteDevice()):
+                if (playBackInfo['device'] == '' and getFavoriteDevice() in devicesDict):
                     payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
                     r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
                     print(r.status_code, r.reason)
@@ -842,7 +971,56 @@ class PlaylistPage(BoxLayout):
                 requests.put("https://api.spotify.com/v1/me/player/shuffle?state=true", headers={'Authorization': token})
 
         newthread = threading.Thread(target = thread)
+        newthread.daemon = True
         newthread.start()
+
+    pass
+
+class SettingsPage(BoxLayout):
+    def __init__(self,screen,name,**kwargs):
+        super(SettingsPage,self).__init__(**kwargs)
+        self.rv.viewclass.screen = screen
+        self.rv.viewclass.page = self
+        self.name = name
+        self.entry = ''
+        self.display.text = ''
+        self.settingsDict = {'Cast'}
+        self.populate(self.settingsDict)
+        self.selectedSetting = ''
+
+    def populate(self, listDict):
+        self.rv.data = [{'value': x} for x in listDict]
+
+    def setting(self, settingType):
+        if (self.selectedSetting == 'Cast'):
+            try:
+                os.remove("favoriteCastDevice.txt")
+            except:
+                print ("Adding New Favorite")
+            f=open("favoriteCastDevice.txt", "a+")
+            f.write(settingType)
+            self.display.text = ''
+            f.close
+            self.populate(self.settingsDict)
+            self.selectedSetting = ''
+            return
+
+        if (settingType == 'Cast'):
+            self.selectedSetting = settingType
+            chromecasts = pychromecast.get_chromecasts()
+            t = [cc.device.friendly_name for cc in chromecasts]
+            self.populate(t)
+            return
+        
+    pass
+
+class SettingsScreen(Screen): 
+    def __init__(self,**kwargs):
+        super(SettingsScreen,self).__init__(**kwargs)
+        self.settingsPage = SettingsPage(self, 'Settings')
+        #self.settingsDict = {'Cast'}
+        #self.settingsPage.populate(self.settingsDict)
+        self.add_widget(self.settingsPage)
 
     pass
 
@@ -903,9 +1081,11 @@ sm.add_widget(HomeScreen2(name='home2'))
 sm.add_widget(CalandarScreen(name='calandar'))
 sm.add_widget(PlaylistScreen(name='playlists'))
 sm.add_widget(DevicesScreen(name='devices'))
+sm.add_widget(SettingsScreen(name='settings'))
 
 #Start thread after start
 newthread = threading.Thread(target = mainThread)
+newthread.daemon = True
 newthread.start() 
 
 class PiDemoApp(App):

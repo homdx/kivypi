@@ -242,9 +242,10 @@
             width: 147.5
             on_release: root.manager.current = 'calandar'
         CustButton:
-            text: "TBA"
+            text: "Settings"
             size_hint: None, .235
             width: 147.5
+            on_press: root.manager.current = 'settings'
         CustButton:
             text: "TBA"
             size_hint: None, .235
@@ -450,6 +451,58 @@
         scroll_wheel_distance: dp(114)
         bar_width: dp(10)
         viewclass: 'DV'
+        RecycleBoxLayout:
+            default_size: None, dp(56)
+            default_size_hint: 1, None
+            size_hint_y: None
+            height: self.minimum_height
+            orientation: 'vertical'
+            spacing: dp(2)
+
+<Set@BoxLayout>:
+    spacing: dp(16)
+    canvas.before:
+        Color:
+            rgba: 0.5, 0.5, 0.5, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    value: ''
+    Button:
+        text: root.value
+        on_release: root.page.setting(root.value)
+<SettingsPage>:
+    canvas:
+        Color:
+            rgba: 0.3, 0.3, 0.3, 1
+        Rectangle:
+            size: self.size
+            pos: self.pos
+    rv: rv
+    orientation: 'vertical'
+    name: ''
+    display: entry
+    GridLayout:
+        id: entry
+        cols: 3
+        rows: 2
+        size_hint_y: None
+        height: dp(108)
+        padding: dp(8)
+        text: ''
+        Label:
+            text: root.name
+        Button:
+            text: 'Back'
+            size_hint: None, .235
+            on_press: root.rv.viewclass.screen.manager.current = 'home'
+
+    RecycleView:
+        id: rv
+        scroll_type: ['bars', 'content']
+        scroll_wheel_distance: dp(114)
+        bar_width: dp(10)
+        viewclass: 'Set'
         RecycleBoxLayout:
             default_size: None, dp(56)
             default_size_hint: 1, None

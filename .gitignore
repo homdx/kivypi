@@ -12,3 +12,5 @@ studentdb.kv
 studentdb.py
 favoritePlaylist.txt
 favoriteDevice.txt
+favoriteCastDevice.txt
+prefs.json
