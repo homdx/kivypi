@@ -15,9 +15,6 @@ from threading import Event
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
 from string import ascii_lowercase
-#from apiclient.discovery import build
-#from httplib2 import Http
-#from oauth2client import file, client, tools
 from kivy.app import App
 from kivy.lang import Builder
 from kivy.uix.screenmanager import ScreenManager, Screen
@@ -54,11 +51,13 @@ sRefreshToken = lines[1]
 triggerToken = lines[2]
 
 token = ''
+#stores data for currently packback data from Spotify
 playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
 devicesDict = {}
 playlistDict = {}
 running = 1
 
+#Refresh spotfy token
 def refreshToken():
     try:
         global token
@@ -69,6 +68,7 @@ def refreshToken():
     except:
         print ("Error getting new token")
 
+#update the dictionary with latest data from spotify if anything is playing
 def getPlaybackData():
     try:
         global playBackInfo
@@ -136,6 +136,7 @@ def setVolume(volume):
     except:
         print("Nothing Playing")
 
+#get user info for Spotify account
 def getUserInfo():
     try:
         global userId
@@ -157,6 +158,7 @@ def getFavoritePlaylist2():
     except:
         return 0
 
+#Load user's favorite playlist from JSON if it exists
 def getFavoritePlaylist():
     try:
         with open('prefs.json') as f:
@@ -175,6 +177,7 @@ def getFavoriteDevice2():
     except:
         return 0
 
+#Load user's favorite davice from JSON if it exists
 def getFavoriteDevice():
     try:
         with open('prefs.json') as f:
@@ -193,6 +196,7 @@ def getFavoriteCastDevice2():
     except:
         return 0
 
+#Load user's favorite playlist from JSON if it exists
 def getFavoriteCastDevice():
     try:
         with open('prefs.json') as f:
@@ -201,6 +205,7 @@ def getFavoriteCastDevice():
     except:
         return 0
 
+#Set Favorite Devices:
 def setFavoriteDevice():
     try:
         with open('prefs.json', mode='w', encoding='utf-8') as f:
@@ -221,7 +226,9 @@ def setFavoritePlaylist(input):
     with open('prefs.json', mode='w', encoding='utf-8') as f:
         entry = {'playlist': input,}
         #feeds.append(entry)
+#~~~~~~~~~~~~~~~~~~~~~~
 
+#Get current Spotify users playlists 
 def getUserPlaylists():
     global playlistDict
     try:
@@ -237,6 +244,7 @@ def getUserPlaylists():
         print("Error getting playlist data")
         return
         
+#Get current Spotify users devices   
 def getUserDevices():
         try:
             global devicesDict
@@ -247,34 +255,8 @@ def getUserDevices():
                 devicesDict[str(device['name'])] = str(device['id'])
         except:
             print ('Unable to get Devices')
-    
-def getGoogleCalanderItem():
-        # Setup the Calendar API
-        SCOPES = 'https://www.googleapis.com/auth/calendar.readonly'
-        store = file.Storage('credentials.json')
-        creds = store.get()
-        if not creds or creds.invalid:
-            flow = client.flow_from_clientsecrets('client_secrets.json', SCOPES)
-            creds = tools.run_flow(flow, store)
-        service = build('calendar', 'v3', http=creds.authorize(Http()))
 
-        # Call the Calendar API
-        now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
-        #print('Getting the upcoming 10 events')
-        events_result = service.events().list(calendarId='primary', timeMin=now,
-                                            maxResults=10, singleEvents=True,
-                                            orderBy='startTime').execute()
-        events = events_result.get('items', [])
-        
-        calList = list()
-        if not events:
-            print('No upcoming events found.')
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            calList.append(event['summary'] + " " + start)
-            #print(start, event['summary'])
-        return calList
-
+#convert MS input into a current time (minutes & seconds) e.g. 0:25
 def convertMs(millis):
     millis = int(millis)
     seconds=(millis/1000)%60
@@ -284,6 +266,7 @@ def convertMs(millis):
 
     return ("%d:%02d" % (minutes, seconds))
 
+#updates the frontend display with the expected progress of music playback
 def updateLocalMedia(local_ms):
     global playBackInfo
     playBackInfo['progress_ms'] = int(local_ms)
@@ -311,9 +294,10 @@ def find_between( s, first, last ):
     except ValueError:
         return ""
 
+#Shows the provided alert message to user
 def alert(message):
     #popup = Popup(content=Label(text=message), size_hint=(None, None), size=(400, 400))
-    content = Button(text='Close')
+    content = Button(text=message)
     #content.add_widget(Label(text=message))
     popup = Popup(title='Alert', content=content, size_hint=(None, None), size=(500, 500))
 
@@ -321,6 +305,7 @@ def alert(message):
     content.bind(on_press=popup.dismiss)
     popup.open()
 
+#Get initial spotify data (should be moved to function after multi user support)
 refreshToken()
 getPlaybackData()
 userId = getUserInfo()
@@ -328,7 +313,7 @@ getUserPlaylists()
 getUserDevices()
 #calandarList = getGoogleCalanderItem()
 
-#Loop on seprate thread to refresh token
+#Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
 def mainThread():
     while running:
         if (running == 0):
@@ -355,7 +340,7 @@ def mainThread():
         print ("Refreshing Token")
         refreshToken()
 
-# Declare screens
+# Main screen
 class HomeScreen(Screen):
     volume_buttonText = StringProperty(playBackInfo['volume'])
     song_buttonText = StringProperty(playBackInfo['currentSong'])
@@ -632,21 +617,13 @@ class HomeScreen(Screen):
             print([cc.device.friendly_name for cc in chromecasts])
 
             if(len(chromecasts) == 0):
+                alert('No cast devices found')
                 return
 
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == getFavoriteCastDevice())
             # Wait for cast device to be ready
             cast.wait()
-            print(cast.device)
-            #DeviceStatus(friendly_name='Living Room', model_name='Chromecast', manufacturer='Google Inc.', uuid=UUID('df6944da-f016-4cb8-97d0-3da2ccaa380b'), cast_type='cast')
-
-            print(cast.status)
-            #CastStatus(is_active_input=True, is_stand_by=False, volume_level=1.0, volume_muted=False, app_id='CC1AD845', display_name='Default Media Receiver', namespaces=['urn:x-cast:com.google.cast.player.message', 'urn:x-cast:com.google.cast.media'], session_id='CCA39713-9A4F-34A6-A8BF-5D97BE7ECA5C', transport_id='web-9', status_text='')
-
             mc = cast.media_controller
-
-            # Initialize a connection to the Chromecast
-            #cast = pychromecast.get_chromecast(friendly_name=cast_device)
 
             # Create and register a YouTube controller
             yt = YouTubeController()
@@ -682,7 +659,6 @@ class HomeScreen(Screen):
                 except:
                     print('invalid')
 
-            #sorted_x = sorted(urlDict.items(), reverse=True,  key=operator.itemgetter(1))
             sorted_x = sorted(urlDict.items(), reverse=True,  key=lambda x: x[1])
             thislist = []
 
@@ -708,21 +684,15 @@ class HomeScreen(Screen):
             print([cc.device.friendly_name for cc in chromecasts])
 
             if(len(chromecasts) == 0):
+                alert('No cast devices found')
                 return
 
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == "Chromecast")
             # Wait for cast device to be ready
             cast.wait()
-            print(cast.device)
-            #DeviceStatus(friendly_name='Living Room', model_name='Chromecast', manufacturer='Google Inc.', uuid=UUID('df6944da-f016-4cb8-97d0-3da2ccaa380b'), cast_type='cast')
-
-            print(cast.status)
-            #CastStatus(is_active_input=True, is_stand_by=False, volume_level=1.0, volume_muted=False, app_id='CC1AD845', display_name='Default Media Receiver', namespaces=['urn:x-cast:com.google.cast.player.message', 'urn:x-cast:com.google.cast.media'], session_id='CCA39713-9A4F-34A6-A8BF-5D97BE7ECA5C', transport_id='web-9', status_text='')
-
             mc = cast.media_controller
 
             # Initialize a connection to the Chromecast
-            #cast = pychromecast.get_chromecast(friendly_name=cast_device)
 
             # Create and register a YouTube controller
             yt = YouTubeController()
@@ -1075,8 +1045,8 @@ class LockScreen(Screen):
 print ("Before SM")
 sm = ScreenManager()
 print ("After SM")
-sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
+sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen2(name='home2'))
 sm.add_widget(CalandarScreen(name='calandar'))
 sm.add_widget(PlaylistScreen(name='playlists'))
