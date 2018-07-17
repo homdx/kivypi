@@ -148,7 +148,7 @@ def getUserInfo():
         print("Error getting user data")
         return
 
-def getFavoritePlaylist2():
+def getFavoritePlaylist():
     try:
         path = 'favoritePlaylist.txt'
         f=open(path, "r")
@@ -159,7 +159,7 @@ def getFavoritePlaylist2():
         return 0
 
 #Load user's favorite playlist from JSON if it exists
-def getFavoritePlaylist():
+def getFavoritePlaylistJSON():
     try:
         with open('prefs.json') as f:
             data = json.load(f)
@@ -167,7 +167,7 @@ def getFavoritePlaylist():
     except:
         return 0
 
-def getFavoriteDevice2():
+def getFavoriteDevice():
     try:
         path = 'favoriteDevice.txt'
         f=open(path, "r")
@@ -178,7 +178,7 @@ def getFavoriteDevice2():
         return 0
 
 #Load user's favorite davice from JSON if it exists
-def getFavoriteDevice():
+def getFavoriteDeviceJSON():
     try:
         with open('prefs.json') as f:
             data = json.load(f)
@@ -186,7 +186,7 @@ def getFavoriteDevice():
     except:
         return 0
 
-def getFavoriteCastDevice2():
+def getFavoriteCastDevice():
     try:
         path = 'favoriteCastDevice.txt'
         f=open(path, "r")
@@ -197,7 +197,7 @@ def getFavoriteCastDevice2():
         return 0
 
 #Load user's favorite playlist from JSON if it exists
-def getFavoriteCastDevice():
+def getFavoriteCastDeviceJSON():
     try:
         with open('prefs.json') as f:
             data = json.load(f)
@@ -620,6 +620,10 @@ class HomeScreen(Screen):
                 alert('No cast devices found')
                 return
 
+            if(getFavoriteCastDevice() not in [cc.device.friendly_name for cc in chromecasts]):
+                alert('Favorite device ' + getFavoriteCastDevice() + '  not Available')
+                return
+
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == getFavoriteCastDevice())
             # Wait for cast device to be ready
             cast.wait()
@@ -685,6 +689,10 @@ class HomeScreen(Screen):
 
             if(len(chromecasts) == 0):
                 alert('No cast devices found')
+                return
+
+            if(getFavoriteCastDevice() not in [cc.device.friendly_name for cc in chromecasts]):
+                alert('Favorite device ' + getFavoriteCastDevice() + '  not Available')
                 return
 
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == "Chromecast")
