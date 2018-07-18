@@ -7,6 +7,7 @@ try:
   import git
   git_dir = os.getcwd()
   g = git.cmd.Git(git_dir)
+  g.reset('--hard')
   g.pull()
 except Exception as e:
   print("unable to pull latest version: " + e.message)
