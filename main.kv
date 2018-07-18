@@ -208,36 +208,49 @@
         orientation: "lr-tb"
         spacing: 10
         padding: 10
+        canvas.before:
+            Color:
+                rgba: .18, .18, .18, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
         # size_hint defines the percentage of space taken on the
         # x access and the percentage of space left over by the
         # other widgets
         CustButton:
             text: "Plex - Expanse\nWIP"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
         CustButton:
             text: "Plex - Westworld\nWIP"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
         CustButton:
             text: "Google Calander\nWIP"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
         CustButton:
             text: "Home API\nWIP"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
         CustButton:
             text: "Office 365 API\nWIP"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
         CustButton:
             text: "Train Timetable\nBrowser Only"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
             on_press: root.btn_trainTimetable();
         CustButton:
             text: "Google Calander"
+            font_size: 10
             size_hint: None, .235
             width: 147.5
             on_release: root.manager.current = 'calandar'
