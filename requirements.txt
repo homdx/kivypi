@@ -1,0 +1,14 @@
+wheel
+setuptools
+docutils
+pygments
+pypiwin32
+cython
+kivy.deps.sdl2
+kivy.deps.glew
+kivy
+enum34
+requests>=2.0
+protobuf>=3.0.0
+zeroconf
+casttube>=0.1.0

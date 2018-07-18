@@ -39,23 +39,30 @@ print("Current folder: " + os.getcwd())
 
 root_widget = Builder.load_file('main.kv') 
 
-filename = "spot.txt"
+sBasic = None
+sRefreshToken = None
+triggerToken = None
 
-with open(filename) as f:
-    lines = f.readlines()
-#remove whitespace characters like `\n` at the end of each line
-lines = [x.strip() for x in lines] 
+try:
+    with open('tokenData.json') as tokenData:
+        data = json.load(tokenData)
+        if('sBasic' in data):
+            sBasic = data['sBasic']
+        if('sRefreshToken' in data):
+            sRefreshToken = data['sRefreshToken']
+        if('triggerToken' in data):
+            triggerToken = data['triggerToken']
 
-sBasic = lines[0]
-sRefreshToken = lines[1]
-triggerToken = lines[2]
+except Exception as e:
+    print ('Error reading token data:' + e.message)
 
+running = 1
 token = ''
-#stores data for currently packback data from Spotify
-playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
 devicesDict = {}
 playlistDict = {}
-running = 1
+
+#stores data for currently packback data from Spotify
+playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
 
 #Refresh spotfy token
 def refreshToken():
@@ -241,7 +248,7 @@ def getUserPlaylists():
         
         return playlistDict
     except:
-        print("Error getting playlist data")
+        print("Unable to get playlist data")
         return
         
 #Get current Spotify users devices   
@@ -306,11 +313,18 @@ def alert(message):
     popup.open()
 
 #Get initial spotify data (should be moved to function after multi user support)
-refreshToken()
-getPlaybackData()
-userId = getUserInfo()
-getUserPlaylists()
-getUserDevices()
+def getSpotifyData():
+    refreshToken()
+    getPlaybackData()
+    getUserInfo()
+    getUserPlaylists()
+    getUserDevices()
+
+if (sRefreshToken is not None):
+    getSpotifyData()
+else:
+    alert('test')
+
 #calandarList = getGoogleCalanderItem()
 
 #Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
@@ -318,6 +332,9 @@ def mainThread():
     while running:
         if (running == 0):
             break
+        if (token is ''):
+            time.sleep( 1 )
+            continue
         for x in range(0, 600): 
             if (running):
                 time.sleep( 1 )
@@ -450,6 +467,7 @@ class HomeScreen(Screen):
         def thread():
             #Shuffle
             try:
+                global playBackInfo
                 shuffleOn = playBackInfo['shuffling']
                 shuffleOn = not shuffleOn
                 r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=" + str(shuffleOn), headers={'Authorization': token})
@@ -457,7 +475,6 @@ class HomeScreen(Screen):
                 print(r.text[:300] + '...')
                 if (r.status_code == 403):
                     return
-                global playBackInfo
                 playBackInfo['shuffling'] = shuffleOn
                 self.shufflestate_buttonText = str(shuffleOn)
             except:
@@ -519,16 +536,18 @@ class HomeScreen(Screen):
                     playing = r.json()['is_playing']
                     return
                 else:
+                    if (r.status_code == 400):
+                        alert('Bad request: ' + r.json()['error']['message'])
+                        return
                     playing = r.json()['is_playing']
                 if playing: 
                     Pause()
                 else:
                     Play()
             except KeyError as e:
-                print ('Unable to play on Favorite Device: ' + e.message)
-                alert('Unable to play on Favorite Device: ' + e.message)
+                alert('Unable to play on favorite evice: ' + e.message)
             except Exception as e:
-                print ("Error playing or no favorite Device: " + e.message)
+                alert("Error playing or no favorite device: " + e.message)
 
 
         newthread = threading.Thread(target = thread)
@@ -870,7 +889,6 @@ class DevicesPage(BoxLayout):
         #WIP
     def device(self, name):
         def thread():
-            print (self.display.text)
             devicepath = 'favoriteDevice.txt'
             if(self.display.text == 'Favorite'):
                 try:
@@ -881,6 +899,7 @@ class DevicesPage(BoxLayout):
                 f.write(name)
                 self.display.text = ''
                 f.close
+                alert('Added new favorite: ' + name)
             else:
                 payload = {'device_ids':[devicesDict[name]]}
                 print(payload)
@@ -937,6 +956,7 @@ class PlaylistPage(BoxLayout):
                 f.write(playlistDict[name])
                 self.display.text = ''
                 f.close
+                alert('Added new favorite: ' + name)
             else:
                 if (playBackInfo['device'] == '' and getFavoriteDevice() in devicesDict):
                     payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
@@ -962,7 +982,7 @@ class SettingsPage(BoxLayout):
         self.name = name
         self.entry = ''
         self.display.text = ''
-        self.settingsDict = {'Cast'}
+        self.settingsDict = {'Cast', 'Spotify'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
