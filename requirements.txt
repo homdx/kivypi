@@ -10,5 +10,5 @@ kivy
 enum34
 requests>=2.0
 protobuf>=3.0.0
-zeroconf
+zeroconf==0.19.1
 casttube>=0.1.0
