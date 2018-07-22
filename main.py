@@ -11,6 +11,7 @@ import pychromecast
 import signal
 import argparse
 import kivy.utils
+import tokenHandler
 from threading import Event
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
@@ -40,21 +41,9 @@ print("Current folder: " + os.getcwd())
 root_widget = Builder.load_file('main.kv') 
 
 sBasic = None
+sAccessToken = None
 sRefreshToken = None
 triggerToken = None
-
-try:
-    with open('tokenData.json') as tokenData:
-        data = json.load(tokenData)
-        if('sBasic' in data):
-            sBasic = data['sBasic']
-        if('sRefreshToken' in data):
-            sRefreshToken = data['sRefreshToken']
-        if('triggerToken' in data):
-            triggerToken = data['triggerToken']
-
-except Exception as e:
-    print ('Error reading token data:' + e.message)
 
 running = 1
 token = ''
@@ -65,7 +54,30 @@ playlistDict = {}
 playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
 
 #Refresh spotfy token
-def refreshToken():
+
+def readTokenData():
+    try:
+        global sBasic
+        global sAccessToken
+        global sRefreshToken
+        global triggerToken
+        global token
+        with open('tokenData.json') as tokenData:
+            data = json.load(tokenData)
+            if('sBasic' in data):
+                sBasic = data['sBasic']
+            if('sAccessToken' in data):
+                sAccessToken = data['sAccessToken']
+                token = 'Bearer ' + data['sAccessToken']
+            if('sRefreshToken' in data):
+                sRefreshToken = data['sRefreshToken']
+            if('triggerToken' in data):
+                triggerToken = data['triggerToken']
+
+    except Exception as e:
+        print ('Error reading token data:' + e.message)
+
+def refreshToken2():
     try:
         global token
         r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
@@ -79,8 +91,13 @@ def refreshToken():
 def getPlaybackData():
     try:
         global playBackInfo
+        global token
         r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token, 'nocache': ''})
         if (r.status_code == 204):
+            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+            return
+        if (r.status_code == 401):
+            token = ''
             playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
             return
         volume = ''
@@ -312,20 +329,47 @@ def alert(message):
     content.bind(on_press=popup.dismiss)
     popup.open()
 
+def checkMessages(mtype):
+    try:
+        if os.path.isfile(mtype + '.txt'):
+            os.remove(mtype + '.txt') 
+            return True
+    except:
+        return False
+
 #Get initial spotify data (should be moved to function after multi user support)
 def getSpotifyData():
-    refreshToken()
+    #refreshToken()
     getPlaybackData()
     getUserInfo()
     getUserPlaylists()
     getUserDevices()
 
-if (sRefreshToken is not None):
+def refreshToken():
+    try:
+        global token
+        if (sRefreshToken):
+            r = requests.post("http://13.75.194.36:2261/refresh_token", data={'refresh_token': sRefreshToken})
+        if 'access_token' in r.json():
+            token = r.json()['token_type'] + ' ' + r.json()['access_token']
+    except Exception as e:
+        print (e.message)
+        return
+
+def newUserToken():
+    def startHandler():
+        tokenHandler.run()
+    newthread = threading.Thread(target = startHandler)
+    newthread.daemon = True
+    newthread.start()
+    webbrowser.open('http://13.75.194.36:2261/login')
+
+readTokenData()
+refreshToken()
+if (sAccessToken is not None):
     getSpotifyData()
 else:
     alert('test')
-
-#calandarList = getGoogleCalanderItem()
 
 #Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
 def mainThread():
@@ -333,10 +377,18 @@ def mainThread():
         if (running == 0):
             break
         if (token is ''):
+            if (checkMessages('newtoken')):
+                readTokenData()
+                getSpotifyData()
+                continue
             time.sleep( 1 )
             continue
         for x in range(0, 600): 
             if (running):
+                if (checkMessages('newtoken')):
+                    readTokenData()
+                    getSpotifyData()
+                    continue
                 time.sleep( 1 )
                 try:
                     sm.get_screen('home').updateProgess()
@@ -545,7 +597,7 @@ class HomeScreen(Screen):
                 else:
                     Play()
             except KeyError as e:
-                alert('Unable to play on favorite evice: ' + e.message)
+                alert('Unable to play on favorite device: ' + e.message)
             except Exception as e:
                 alert("Error playing or no favorite device: " + e.message)
 
@@ -789,6 +841,9 @@ class HomeScreen2(Screen):
     def btn_trainTimetable(self):
         webbrowser.open('https://anytrip.com.au/stop/au2:206020')
 
+    def btn_refresh(self):
+        refreshToken()
+
     pass
 
 class VolumePopup(Popup):
@@ -982,9 +1037,11 @@ class SettingsPage(BoxLayout):
         self.name = name
         self.entry = ''
         self.display.text = ''
-        self.settingsDict = {'Cast', 'Spotify'}
+        self.settingsDict = {'Cast', 'Link Spotify'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
+
+
 
     def populate(self, listDict):
         self.rv.data = [{'value': x} for x in listDict]
@@ -1008,6 +1065,10 @@ class SettingsPage(BoxLayout):
             chromecasts = pychromecast.get_chromecasts()
             t = [cc.device.friendly_name for cc in chromecasts]
             self.populate(t)
+            return
+
+        if (settingType == 'Link Spotify'):
+            newUserToken()
             return
         
     pass
