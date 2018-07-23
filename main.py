@@ -349,7 +349,7 @@ def refreshToken():
     try:
         global token
         if (sRefreshToken):
-            r = requests.post("http://13.75.194.36:2261/refresh_token", data={'refresh_token': sRefreshToken})
+            r = requests.post("http://13.75.194.36:8080/refresh_token", data={'refresh_token': sRefreshToken})
         if 'access_token' in r.json():
             token = r.json()['token_type'] + ' ' + r.json()['access_token']
     except Exception as e:
@@ -362,7 +362,7 @@ def newUserToken():
     newthread = threading.Thread(target = startHandler)
     newthread.daemon = True
     newthread.start()
-    webbrowser.open('http://13.75.194.36:2261/login')
+    webbrowser.open('http://13.75.194.36:8080/login')
 
 readTokenData()
 refreshToken()
