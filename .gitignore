@@ -2,6 +2,7 @@
 Playlists.txt
 ButtonConfig.txt
 __pycache__
+tokenHandler.pyc
 client_secret.json
 credentials.json
 favoritePlaylist.txt

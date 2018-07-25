@@ -62,6 +62,11 @@ def readTokenData():
         global sRefreshToken
         global triggerToken
         global token
+
+        if not os.path.isfile('tokenData.json'):
+            print ('No existing token data')
+            return
+
         with open('tokenData.json') as tokenData:
             data = json.load(tokenData)
             if('sBasic' in data):
@@ -76,16 +81,6 @@ def readTokenData():
 
     except Exception as e:
         print ('Error reading token data:' + e.message)
-
-def refreshToken2():
-    try:
-        global token
-        r = requests.post("https://accounts.spotify.com/api/token", headers={'Authorization': sBasic}, data={'grant_type': 'refresh_token', 'refresh_token': sRefreshToken})
-        print(r.status_code, r.reason)
-        print(r.text[:300] + '...')
-        token = 'Bearer ' + r.json()['access_token']
-    except:
-        print ("Error getting new token")
 
 #update the dictionary with latest data from spotify if anything is playing
 def getPlaybackData():
@@ -164,9 +159,11 @@ def setVolume(volume):
 def getUserInfo():
     try:
         global userId
+        global userDisplayName
         r = requests.get("https://api.spotify.com/v1/me", headers={'Authorization': token})
         print(r.status_code, r.reason)
         userId = r.json()['id']
+        userDisplayName = r.json()['display_name']
         return userId
     except:
         print("Error getting user data")
@@ -350,6 +347,8 @@ def refreshToken():
         global token
         if (sRefreshToken):
             r = requests.post("http://13.75.194.36:8080/refresh_token", data={'refresh_token': sRefreshToken})
+        else:
+            return
         if 'access_token' in r.json():
             token = r.json()['token_type'] + ' ' + r.json()['access_token']
     except Exception as e:
@@ -364,12 +363,16 @@ def newUserToken():
     newthread.start()
     webbrowser.open('http://13.75.194.36:8080/login')
 
-readTokenData()
-refreshToken()
-if (sAccessToken is not None):
-    getSpotifyData()
-else:
-    alert('test')
+def initToken(link):
+    readTokenData()
+    refreshToken()
+    if (sAccessToken is not None):
+        getSpotifyData()
+        if link:
+            alert('Linked Spotify Account: ' + userDisplayName)
+
+#Initialize token data
+initToken(0)
 
 #Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
 def mainThread():
@@ -378,16 +381,14 @@ def mainThread():
             break
         if (token is ''):
             if (checkMessages('newtoken')):
-                readTokenData()
-                getSpotifyData()
+                initToken(1)
                 continue
             time.sleep( 1 )
             continue
         for x in range(0, 600): 
             if (running):
                 if (checkMessages('newtoken')):
-                    readTokenData()
-                    getSpotifyData()
+                    initToken(1)
                     continue
                 time.sleep( 1 )
                 try:
@@ -523,9 +524,7 @@ class HomeScreen(Screen):
                 shuffleOn = playBackInfo['shuffling']
                 shuffleOn = not shuffleOn
                 r = requests.put("https://api.spotify.com/v1/me/player/shuffle?state=" + str(shuffleOn), headers={'Authorization': token})
-                print(r.status_code, r.reason)
-                print(r.text[:300] + '...')
-                if (r.status_code == 403):
+                if (r.status_code is not 204):
                     return
                 playBackInfo['shuffling'] = shuffleOn
                 self.shufflestate_buttonText = str(shuffleOn)
