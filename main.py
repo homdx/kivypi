@@ -13,7 +13,6 @@ import signal
 import argparse
 import kivy.utils
 import tokenHandler
-import browser
 from threading import Event
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
@@ -43,6 +42,9 @@ print("Current folder: " + os.getcwd())
 WINDOWS = (osplatform.system() == "Windows")
 LINUX = (osplatform.system() == "Linux")
 MAC = (osplatform.system() == "Darwin")
+
+if not LINUX:
+    import browser
 
 root_widget = Builder.load_file('main.kv') 
 
