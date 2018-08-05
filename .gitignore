@@ -3,6 +3,7 @@ Playlists.txt
 ButtonConfig.txt
 __pycache__
 tokenHandler.pyc
+browser.pyc
 client_secret.json
 credentials.json
 favoritePlaylist.txt
@@ -10,3 +11,4 @@ favoriteDevice.txt
 favoriteCastDevice.txt
 prefs.json
 tokenData.json
+buildozer.spec

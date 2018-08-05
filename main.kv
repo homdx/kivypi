@@ -135,15 +135,15 @@
             width: 147.5
             on_press: root.btn_addCurrentPlaying();
         CustButton:
+            text: "Move to\n Reconsider"
+            size_hint: None, .275
+            width: 147.5
+            on_press: root.btn_moveCurrentPlaying();
+        CustButton:
             text: "Volume: " + root.volume_buttonText
             size_hint: None, .275
             width: 147.5
             on_release: root.volPopup.open()
-        CustButton:
-            text: "Lock"
-            size_hint: None, .275
-            width: 147.5
-            on_press: root.manager.current = 'lock'
         CustButton:
             text: "\n\n\nTop Today"
             size_hint: None, .275
@@ -510,7 +510,7 @@
         Button:
             text: 'Back'
             size_hint: None, .235
-            on_press: root.rv.viewclass.screen.manager.current = 'home'
+            on_press: root.back()
 
     RecycleView:
         id: rv

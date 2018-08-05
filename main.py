@@ -4,6 +4,7 @@ import requests
 import json
 import webbrowser
 import os
+import platform as osplatform
 import threading, time
 import datetime
 import socket
@@ -12,6 +13,7 @@ import signal
 import argparse
 import kivy.utils
 import tokenHandler
+import browser
 from threading import Event
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
@@ -37,6 +39,10 @@ from kivy.base import runTouchApp
 
 os.chdir(os.path.dirname(__file__))
 print("Current folder: " + os.getcwd())
+
+WINDOWS = (osplatform.system() == "Windows")
+LINUX = (osplatform.system() == "Linux")
+MAC = (osplatform.system() == "Darwin")
 
 root_widget = Builder.load_file('main.kv') 
 
@@ -73,7 +79,6 @@ def readTokenData():
                 sBasic = data['sBasic']
             if('sAccessToken' in data):
                 sAccessToken = data['sAccessToken']
-                token = 'Bearer ' + data['sAccessToken']
             if('sRefreshToken' in data):
                 sRefreshToken = data['sRefreshToken']
             if('triggerToken' in data):
@@ -84,63 +89,67 @@ def readTokenData():
 
 #update the dictionary with latest data from spotify if anything is playing
 def getPlaybackData():
-    try:
-        global playBackInfo
-        global token
-        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token, 'nocache': ''})
-        if (r.status_code == 204):
-            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
-            return
-        if (r.status_code == 401):
-            token = ''
-            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
-            return
-        volume = ''
-        device = ''
-        deviceType = ''
-        currentSong = ''
-        duration_ms = 0
-        artist = ''
-        currentArtist = ''
-        playing = False
-        shuffling = False
-        progress_ms = 0
-        seekPos = 0
-        
-        if ('device' in r.json()):
-            deviceData = r.json()['device']
-            volume = str(deviceData['volume_percent'])
-            device = str(deviceData['name'])
-            deviceType = str(deviceData['type'])
+    def thread():
+        try:
+            global playBackInfo
+            global token
+            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token, 'nocache': ''})
+            if (r.status_code == 204):
+                playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+                return
+            if (r.status_code == 401):
+                token = ''
+                playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+                return
+            volume = ''
+            device = ''
+            deviceType = ''
+            currentSong = ''
+            duration_ms = 0
+            artist = ''
+            currentArtist = ''
+            playing = False
+            shuffling = False
+            progress_ms = 0
+            seekPos = 0
             
-        if ('item' in r.json() and r.json()['item'] != None):
-            item = r.json()['item']
-            currentSong = str(item['name'])
-            duration_ms = str(item['duration_ms'])
-            artist = item['artists']
-            currentArtist = str(artist[0]['name'])
-        try:
-            playing = r.json()['is_playing']
-            shuffling = r.json()['shuffle_state']
-            progress_ms = r.json()['progress_ms']
+            if ('device' in r.json()):
+                deviceData = r.json()['device']
+                volume = str(deviceData['volume_percent'])
+                device = str(deviceData['name'])
+                deviceType = str(deviceData['type'])
+                
             if ('item' in r.json() and r.json()['item'] != None):
-                seekPos = (float(progress_ms) / float(item['duration_ms']) * 100)
-        except:
-            print ('Error')
+                item = r.json()['item']
+                currentSong = str(item['name'])
+                duration_ms = str(item['duration_ms'])
+                artist = item['artists']
+                currentArtist = str(artist[0]['name'])
+            try:
+                playing = r.json()['is_playing']
+                shuffling = r.json()['shuffle_state']
+                progress_ms = r.json()['progress_ms']
+                if ('item' in r.json() and r.json()['item'] != None):
+                    seekPos = (float(progress_ms) / float(item['duration_ms']) * 100)
+            except:
+                print ('Error')
 
-        playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": deviceType, "shuffling": shuffling, "currentSong": currentSong, "currentArtist": currentArtist, "progress_ms": progress_ms, "duration_ms": duration_ms, "seekPos": seekPos}
-        try:
-            print (playBackInfo)
-        except:
-            print ('Cant print playback')
-    except Exception as e:
-        print("Nothing Playing:")
-        try:
-            print(e.message)
-        except:
-            print('Unhandled error')
-        playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
-        #print (playBackInfo)
+            playBackInfo = {"playing": playing, "volume": volume, "device": device, "deviceType": deviceType, "shuffling": shuffling, "currentSong": currentSong, "currentArtist": currentArtist, "progress_ms": progress_ms, "duration_ms": duration_ms, "seekPos": seekPos}
+            try:
+                print (playBackInfo)
+            except:
+                print ('Cant print playback')
+        except Exception as e:
+            print("Nothing Playing:")
+            try:
+                print(e.message)
+            except:
+                print('Unhandled error')
+            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+            #print (playBackInfo)
+    newthread = threading.Thread(target = thread)
+    newthread.daemon = True
+    newthread.start()
 
 def setVolume(volume):
     try:
@@ -169,84 +178,42 @@ def getUserInfo():
         print("Error getting user data")
         return
 
-def getFavoritePlaylist():
-    try:
-        path = 'favoritePlaylist.txt'
-        f=open(path, "r")
-        fav = f.read()
-        f.close
-        return fav
-    except:
-        return 0
+#Load user's prefs based on input
+def getUserPrefs(prefData):
+    prefsFilename = "prefs.json"
+    if not os.path.isfile(prefsFilename):
+        print ('No existing user pref data')
+        return False
 
-#Load user's favorite playlist from JSON if it exists
-def getFavoritePlaylistJSON():
-    try:
-        with open('prefs.json') as f:
-            data = json.load(f)
-            return data['favorites']['playlist']
-    except:
-        return 0
+    with open(prefsFilename) as jsonData:
+        data = json.load(jsonData)
+        if(prefData in data):
+            return data[prefData]
+        else:
+            return False
 
-def getFavoriteDevice():
-    try:
-        path = 'favoriteDevice.txt'
-        f=open(path, "r")
-        fav = f.read()
-        f.close
-        return fav
-    except:
-        return 0
+#Set user prefs based on pref type and input:
+def setUserPrefs(prefType, prefData):
+    prefsFilename = "prefs.json"
+    prefType = unicode(prefType, "utf-8")
+    prefData = unicode(prefData, "utf-8")
+    if (os.path.isfile(prefsFilename) and os.stat(prefsFilename).st_size != 0):
+        jsonFile = open(prefsFilename, "r") # Open the JSON file for reading
+        data = json.load(jsonFile) # Read the JSON into the buffer
+        jsonFile.close() # Close the JSON file
+        data[prefType] = prefData
+    else:
+        jsonFile = open(prefsFilename, "a+") # Create the JSON file
+        data = {prefType: prefData}
+        jsonFile.write(json.dumps(data))
+        jsonFile.close() # Close the JSON file
+        return
 
-#Load user's favorite davice from JSON if it exists
-def getFavoriteDeviceJSON():
-    try:
-        with open('prefs.json') as f:
-            data = json.load(f)
-            return data['favorites']['device']
-    except:
-        return 0
+    ## Save our changes to JSON file
+    jsonFile = open(prefsFilename, "w+")
+    jsonFile.write(json.dumps(data))
+    jsonFile.close()
 
-def getFavoriteCastDevice():
-    try:
-        path = 'favoriteCastDevice.txt'
-        f=open(path, "r")
-        fav = f.read()
-        f.close
-        return fav
-    except:
-        return 0
-
-#Load user's favorite playlist from JSON if it exists
-def getFavoriteCastDeviceJSON():
-    try:
-        with open('prefs.json') as f:
-            data = json.load(f)
-            return data['favorites']['cast']
-    except:
-        return 0
-
-#Set Favorite Devices:
-def setFavoriteDevice():
-    try:
-        with open('prefs.json', mode='w', encoding='utf-8') as f:
-            data = json.load(f)
-            return data.favorites.device
-    except:
-        return 0
-
-def setFavoriteCastDevice():
-    try:
-        with open('prefs.json', mode='w', encoding='utf-8') as f:
-            data = json.load(f)
-            return data.favorites.cast
-    except:
-        return 0
-
-def setFavoritePlaylist(input):
-    with open('prefs.json', mode='w', encoding='utf-8') as f:
-        entry = {'playlist': input,}
-        #feeds.append(entry)
 #~~~~~~~~~~~~~~~~~~~~~~
 
 #Get current Spotify users playlists 
@@ -267,6 +234,7 @@ def getUserPlaylists():
         
 #Get current Spotify users devices   
 def getUserDevices():
+    def thread():
         try:
             global devicesDict
             r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
@@ -277,6 +245,10 @@ def getUserDevices():
         except:
             print ('Unable to get Devices')
 
+    newthread = threading.Thread(target = thread)
+    newthread.daemon = True
+    newthread.start()
+        
 #convert MS input into a current time (minutes & seconds) e.g. 0:25
 def convertMs(millis):
     millis = int(millis)
@@ -348,6 +320,7 @@ def refreshToken():
         if (sRefreshToken):
             r = requests.post("http://13.75.194.36:8080/refresh_token", data={'refresh_token': sRefreshToken})
         else:
+            print ('No refresh token')
             return
         if 'access_token' in r.json():
             token = r.json()['token_type'] + ' ' + r.json()['access_token']
@@ -361,17 +334,21 @@ def newUserToken():
     newthread = threading.Thread(target = startHandler)
     newthread.daemon = True
     newthread.start()
-    webbrowser.open('http://13.75.194.36:8080/login')
+    if LINUX:
+        webbrowser.open('http://13.75.194.36:8080/login')
+    else:
+        #run from cefpython if not Linux
+        browser.run()
 
 def initToken(link):
     readTokenData()
     refreshToken()
-    if (sAccessToken is not None):
+    if (token is not ''):
         getSpotifyData()
         if link:
             alert('Linked Spotify Account: ' + userDisplayName)
 
-#Initialize token data
+#Initialize token data 0 being that we are not linking a new account
 initToken(0)
 
 #Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
@@ -379,7 +356,7 @@ def mainThread():
     while running:
         if (running == 0):
             break
-        if (token is ''):
+        if (sRefreshToken is None):
             if (checkMessages('newtoken')):
                 initToken(1)
                 continue
@@ -493,8 +470,7 @@ class HomeScreen(Screen):
 
     def btn_addCurrentPlaying(self):
         def thread():
-            favPlaylist = getFavoritePlaylist()
-            print (favPlaylist)
+            favPlaylist = getUserPrefs('favoritePlaylist')
             if (favPlaylist):
                 r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
                 try:
@@ -506,11 +482,56 @@ class HomeScreen(Screen):
                     r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/" + favPlaylist, headers={'Authorization': token})
                     #Check track is not already in playlist
                     if trackId not in r.text: 
-                        print("Adding to Playlist")
-                        requests.post("https://api.spotify.com/v1/users/" + userId + "/playlists/" + favPlaylist + "/tracks?uris=spotify%3Atrack%3A" + trackId, headers={'Authorization': token})
+                        p = requests.post("https://api.spotify.com/v1/users/" + userId + "/playlists/" + favPlaylist + "/tracks?uris=spotify%3Atrack%3A" + trackId, headers={'Authorization': token})
+                        if (p.status_code < 400):
+                            print("Added to Playlist")
+                    else:
+                        alert('Already in Favorite Playlist')
                 except:
                     print("Error adding to playlist")
                     return       
+
+        newthread = threading.Thread(target = thread)
+        newthread.daemon = True
+        newthread.start()
+
+    #Need to add to users selected 'Reconsider' Playlist, then remove from Favorite Playlist
+    #Negative (Current song not in favorite) - just add to Reconsider?
+    def btn_moveCurrentPlaying(self):
+        def thread():
+            backPlaylist = getUserPrefs('favoriteBackupPlaylist')
+            favPlaylist = getUserPrefs('favoritePlaylist')
+            if (backPlaylist and favPlaylist):
+                r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+                try:
+                    if( r.status_code == 204 or r.json()['item'] == None):
+                        alert("Nothing playing")   
+                        return
+                    items = r.json()['item']
+                    trackId = items['id']
+                    payload = { "tracks": [{ "uri": "spotify:track:" + trackId }]}
+                    r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/" + favPlaylist, headers={'Authorization': token})
+                    #Check track is not already in playlist
+                    if trackId in r.text: 
+                        #payload required for delete endpoint but not post
+                        p = requests.delete("https://api.spotify.com/v1/users/" + userId + "/playlists/" + favPlaylist + "/tracks", json=payload, headers={'Authorization': token})
+                        if (p.status_code < 400):
+                            print("Removed from Favorite Playlist")
+                    else:
+                        alert('Track not in Favorite Playlist')
+                        return
+
+                    r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/" + backPlaylist, headers={'Authorization': token})
+                    if trackId not in r.text:
+                        p = requests.post("https://api.spotify.com/v1/users/" + userId + "/playlists/" + backPlaylist + "/tracks?uris=spotify%3Atrack%3A" + trackId, headers={'Authorization': token})
+                        if (p.status_code < 400):
+                            print("Added to Backup Playlist")
+                    
+                except:
+                    alert("Error adding to playlist")
+                    return
+            else:
+                alert('You need a Favorite and Backup playlist to do this')   
 
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
@@ -578,8 +599,8 @@ class HomeScreen(Screen):
             #Toggle Playback state
             try:
                 r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-                if (r.status_code == 204 and getFavoriteDevice()):
-                    payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
+                if (r.status_code == 204 and getUserPrefs('favoriteDevice')):
+                    payload = {'device_ids':[devicesDict[getUserPrefs('favoriteDevice')]]}
                     r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
                     print(r.status_code, r.reason)
                     time.sleep( 1 )
@@ -590,7 +611,10 @@ class HomeScreen(Screen):
                     if (r.status_code == 400):
                         alert('Bad request: ' + r.json()['error']['message'])
                         return
-                    playing = r.json()['is_playing']
+                    if ('is_playing' in r.json()):
+                        playing = r.json()['is_playing']
+                    else:
+                        return
                 if playing: 
                     Pause()
                 else:
@@ -630,7 +654,7 @@ class HomeScreen(Screen):
                 'day': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100"
                 }.get(x, "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100") 
 
-            if(not getFavoriteCastDevice()):
+            if(not getUserPrefs('favoriteCastDevice')):
                 alert('Select a default Cast device in settings')
                 return
 
@@ -690,11 +714,11 @@ class HomeScreen(Screen):
                 alert('No cast devices found')
                 return
 
-            if(getFavoriteCastDevice() not in [cc.device.friendly_name for cc in chromecasts]):
-                alert('Favorite device ' + getFavoriteCastDevice() + '  not Available')
+            if(getUserPrefs('favoriteCastDevice') not in [cc.device.friendly_name for cc in chromecasts]):
+                alert('Favorite device ' + getUserPrefs('favoriteCastDevice') + '  not Available')
                 return
 
-            cast = next(cc for cc in chromecasts if cc.device.friendly_name == getFavoriteCastDevice())
+            cast = next(cc for cc in chromecasts if cc.device.friendly_name == getUserPrefs('favoriteCastDevice'))
             # Wait for cast device to be ready
             cast.wait()
             mc = cast.media_controller
@@ -719,7 +743,7 @@ class HomeScreen(Screen):
         def thread():
             filename = "YTTopWeek_All.txt"
 
-            if(not getFavoriteCastDevice()):
+            if(not getUserPrefs('favoriteCastDevice')):
                 alert('Select a default Cast device in settings')
                 return
 
@@ -761,8 +785,8 @@ class HomeScreen(Screen):
                 alert('No cast devices found')
                 return
 
-            if(getFavoriteCastDevice() not in [cc.device.friendly_name for cc in chromecasts]):
-                alert('Favorite device ' + getFavoriteCastDevice() + '  not Available')
+            if(getUserPrefs('favoriteCastDevice') not in [cc.device.friendly_name for cc in chromecasts]):
+                alert('Favorite device ' + getUserPrefs('favoriteCastDevice') + '  not Available')
                 return
 
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == "Chromecast")
@@ -943,16 +967,9 @@ class DevicesPage(BoxLayout):
         #WIP
     def device(self, name):
         def thread():
-            devicepath = 'favoriteDevice.txt'
             if(self.display.text == 'Favorite'):
-                try:
-                    os.remove(devicepath)
-                except:
-                    print ("Adding New Favorite")
-                f=open(devicepath, "a+")
-                f.write(name)
+                setUserPrefs('favoriteDevice', name)
                 self.display.text = ''
-                f.close
                 alert('Added new favorite: ' + name)
             else:
                 payload = {'device_ids':[devicesDict[name]]}
@@ -960,9 +977,9 @@ class DevicesPage(BoxLayout):
                 r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
                 print(r.status_code, r.reason)
                 #Play on fav Playlist
-                if (getFavoritePlaylist()):
+                if (getUserPrefs('favoritePlaylist')):
                     time.sleep( 1 )
-                    payload = {'context_uri': 'spotify:user:' + userId + ':playlist:' + getFavoritePlaylist()}
+                    payload = {'context_uri': 'spotify:user:' + userId + ':playlist:' + getUserPrefs('favoritePlaylist')}
                     print (payload)
                     r = requests.put("https://api.spotify.com/v1/me/player/play", json=payload, headers={'Authorization': token})
                     print(r.status_code, r.reason)
@@ -999,21 +1016,13 @@ class PlaylistPage(BoxLayout):
     def playlist(self, name):
         def thread():
             print (self.display.text)
-            playlistPath = "favoritePlaylist.txt"
             if(self.display.text == 'Favorite'):
-                try:
-                    os.remove(playlistPath)
-                except:
-                    print ("Adding New Favorite")
-
-                f=open(playlistPath, "a+")
-                f.write(playlistDict[name])
+                setUserPrefs('favoritePlaylist', playlistDict[name])
                 self.display.text = ''
-                f.close
                 alert('Added new favorite: ' + name)
             else:
-                if (playBackInfo['device'] == '' and getFavoriteDevice() in devicesDict):
-                    payload = {'device_ids':[devicesDict[getFavoriteDevice()]]}
+                if (playBackInfo['device'] == '' and getUserPrefs('favoriteDevice') in devicesDict):
+                    payload = {'device_ids':[devicesDict[getUserPrefs('favoriteDevice')]]}
                     r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
                     print(r.status_code, r.reason)
                     time.sleep( 1 )
@@ -1036,30 +1045,38 @@ class SettingsPage(BoxLayout):
         self.name = name
         self.entry = ''
         self.display.text = ''
-        self.settingsDict = {'Cast', 'Link Spotify'}
+        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
-
+    def back(self):
+        self.populate(self.settingsDict)
+        self.selectedSetting = ''
+        #set screen to home
+        sm.current = 'home'
+        
 
     def populate(self, listDict):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
         if (self.selectedSetting == 'Cast'):
-            try:
-                os.remove("favoriteCastDevice.txt")
-            except:
-                print ("Adding New Favorite")
-            f=open("favoriteCastDevice.txt", "a+")
-            f.write(settingType)
+            setUserPrefs('favoriteCastDevice', settingType)
             self.display.text = ''
-            f.close
             self.populate(self.settingsDict)
             self.selectedSetting = ''
+            alert('Favorite Cast Device set: ' + settingType)
+            return
+        
+        if (self.selectedSetting == 'Choose Backup Playlist'):
+            setUserPrefs('favoriteBackupPlaylist', playlistDict[settingType])
+            self.display.text = ''
+            self.populate(self.settingsDict)
+            self.selectedSetting = ''
+            alert('Backup Playlist set: ' + settingType)
             return
 
-        if (settingType == 'Cast'):
+        if (settingType == 'Choose Cast Device'):
             self.selectedSetting = settingType
             chromecasts = pychromecast.get_chromecasts()
             t = [cc.device.friendly_name for cc in chromecasts]
@@ -1068,6 +1085,11 @@ class SettingsPage(BoxLayout):
 
         if (settingType == 'Link Spotify'):
             newUserToken()
+            return
+        
+        if (settingType == 'Choose Backup Playlist'):
+            self.populate(playlistDict)
+            self.selectedSetting = settingType
             return
         
     pass
