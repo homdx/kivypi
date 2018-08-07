@@ -1082,7 +1082,7 @@ class SettingsPage(BoxLayout):
             return
 
         if (settingType == 'Choose Cast Device'):
-            self.selectedSetting = settingType
+            self.selectedSetting = 'Cast'
             chromecasts = pychromecast.get_chromecasts()
             t = [cc.device.friendly_name for cc in chromecasts]
             self.populate(t)
