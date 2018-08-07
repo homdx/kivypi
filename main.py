@@ -34,6 +34,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.listview import ListView
 from kivy.uix.label import Label
 from kivy.uix.button import Button
+from kivy.uix.textinput import TextInput
 from kivy.base import runTouchApp
 
 os.chdir(os.path.dirname(__file__))
@@ -197,8 +198,10 @@ def getUserPrefs(prefData):
 #Set user prefs based on pref type and input:
 def setUserPrefs(prefType, prefData):
     prefsFilename = "prefs.json"
-    prefType = unicode(prefType, "utf-8")
-    prefData = unicode(prefData, "utf-8")
+    if (type(prefType) is not unicode):
+        prefType = unicode(prefType, "utf-8")
+    if (type(prefData) is not unicode):
+        prefData = unicode(prefData, "utf-8")
     if (os.path.isfile(prefsFilename) and os.stat(prefsFilename).st_size != 0):
         jsonFile = open(prefsFilename, "r") # Open the JSON file for reading
         data = json.load(jsonFile) # Read the JSON into the buffer
@@ -1144,11 +1147,33 @@ class DevicesScreen(Screen):
     pass
 
 class LockScreen(Screen): 
+    def __init__(self,**kwargs):
+        super(LockScreen,self).__init__(**kwargs)
+        if not getUserPrefs('loginCode'):
+            #alert('Enter a new login code')
+            self.newCodeLabel = Label()
+            self.newCodeLabel.text = 'Enter a new login code'
+            self.newCodeLabel.font_size = 36
+            self.newCodeLabel.font_name = "Resources/LemonMilk.otf"
+            self.newCodeLabel.color = 1
+            self.newCodeLabel.center_y = 300
+            self.add_widget(self.newCodeLabel)
+
     def btn_checkInput(self, input):
-        print (input)
-        if input == '4444':
-            print('Correct')
-            sm.current = 'home'
+        loginCode = getUserPrefs('loginCode')
+        if loginCode:
+            if input == loginCode:
+                #Correct code swap to home screen
+                sm.current = 'home'
+        else:
+            #If no existing code ch
+            if len(input) >= 4 and len(input) <= 8:
+                setUserPrefs('loginCode', input)
+                alert('Login code set')
+                self.remove_widget(self.newCodeLabel)
+            else:
+                alert('Login code should be 4 - 8 characters')
+
         self.display.text = ''
 
     pass
@@ -1157,8 +1182,8 @@ class LockScreen(Screen):
 print ("Before SM")
 sm = ScreenManager()
 print ("After SM")
-sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(LockScreen(name='lock'))
+sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(HomeScreen2(name='home2'))
 sm.add_widget(CalandarScreen(name='calandar'))
 sm.add_widget(PlaylistScreen(name='playlists'))
