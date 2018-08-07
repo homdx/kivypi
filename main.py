@@ -1155,7 +1155,6 @@ class LockScreen(Screen):
             self.newCodeLabel.text = 'Enter a new login code'
             self.newCodeLabel.font_size = 36
             self.newCodeLabel.font_name = "Resources/LemonMilk.otf"
-            self.newCodeLabel.color = 1
             self.newCodeLabel.center_y = 300
             self.add_widget(self.newCodeLabel)
 
