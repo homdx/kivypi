@@ -11,7 +11,7 @@ import socket
 import pychromecast
 import signal
 import argparse
-import kivy.utils
+import kivy.utils as utils
 import tokenHandler
 from threading import Event
 from pychromecast.controllers.youtube import YouTubeController
@@ -1155,7 +1155,8 @@ class LockScreen(Screen):
             self.newCodeLabel.text = 'Enter a new login code'
             self.newCodeLabel.font_size = 36
             self.newCodeLabel.font_name = "Resources/LemonMilk.otf"
-            self.newCodeLabel.center_y = 300
+            self.newCodeLabel.color = utils.get_color_from_hex('#F05F40')
+            self.newCodeLabel.center_y = 200
             self.add_widget(self.newCodeLabel)
 
     def btn_checkInput(self, input):
