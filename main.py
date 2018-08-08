@@ -652,12 +652,32 @@ class HomeScreen(Screen):
                 if(last == ''):
                     print ('error: ' + x + " :" + str(num))
 
+            #number of videos to play
+            vidCount = '100'
+            vidCountMax = 50
+            watchedVideoPath = 'WatchedVideoLog.txt'
+
             def f(x):
                 return {
-                'month': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=month&limit=100",
-                'week': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=week&limit=100",
-                'day': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100"
-                }.get(x, "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=100") 
+                'month': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=month&limit=" + vidCount,
+                'week': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=week&limit=" + vidCount,
+                'day': "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=" + vidCount
+                }.get(x, "https://www.reddit.com/r/YoutubeHaiku/top.json?sort=top&t=day&limit=" + vidCount)
+
+            def checkWatched(url):
+                if not os.path.isfile(watchedVideoPath):
+                    return False
+                with open(watchedVideoPath) as f:
+                    lines = f.readlines()
+                    for x in lines:
+                        if str(url)+'\n' == x:
+                            return True
+                return False
+
+            def setWatched(url):
+                f=open(watchedVideoPath, "a+")
+                f.write(url+'\n')
+                f.close
 
             if(not getUserPrefs('favoriteCastDevice')):
                 alert('Select a default Cast device in settings')
@@ -676,6 +696,8 @@ class HomeScreen(Screen):
             data2 = r.json()['data']
             children = data2['children']
             for c in children:
+                if len(thislist) >= vidCountMax:
+                    break
                 innerData = c['data']
                 x = innerData['url']
                 x = x.replace('%26', '&')
@@ -684,24 +706,34 @@ class HomeScreen(Screen):
                     print ('Skipping vid: ' + x)
                     continue
                 elif ('attribution_link' in x):
-                    thislist.append(find_between(x, 'v=', '&'))
-                    checkLast(thislist[-1], x, 1)
+                    vidId = find_between(x, 'v=', '&')
+                    if not checkWatched(vidId):
+                        thislist.append(vidId)
+                        checkLast(thislist[-1], x, 5)
                     continue
                 elif('?t=' in x):
-                    thislist.append(find_between(x, 'be/', '?'))
-                    checkLast(thislist[-1], x, 3)
+                    vidId = find_between(x, 'be/', '?')
+                    if not checkWatched(vidId):
+                        thislist.append(vidId)
+                        checkLast(thislist[-1], x, 5)
                     continue
                 elif ('&' in x):
-                    thislist.append(find_between(x, 'v=', '&'))
-                    checkLast(thislist[-1], x, 2)
+                    vidId = find_between(x, 'v=', '&')
+                    if not checkWatched(vidId):
+                        thislist.append(vidId)
+                        checkLast(thislist[-1], x, 5)
                     continue
                 elif('be/' in x):
-                    thislist.append(find_from(x, 'be/'))
-                    checkLast(thislist[-1], x, 4)
+                    vidId = find_from(x, 'be/')
+                    if not checkWatched(vidId):
+                        thislist.append(vidId)
+                        checkLast(thislist[-1], x, 5)
                     continue
                 elif('v=' in x):
-                    thislist.append(find_from(x, 'v='))
-                    checkLast(thislist[-1], x, 5)
+                    vidId = find_from(x, 'v=')
+                    if not checkWatched(vidId):
+                        thislist.append(vidId)
+                        checkLast(thislist[-1], x, 5)
                     continue
                 else:
                     print("Invalid url: " + x)
@@ -733,10 +765,13 @@ class HomeScreen(Screen):
             cast.register_handler(yt)
 
             # Play the video ID we've been given
-            yt.play_video(thislist[0])
-            thislist.remove(thislist[0])
+            if len(thislist) is not 0:
+                setWatched(thislist[0])
+                yt.play_video(thislist[0])
+                thislist.remove(thislist[0])
 
             for x in thislist:
+                setWatched(x)
                 yt.add_to_queue(x)
 
         newthread = threading.Thread(target = thread)
@@ -862,9 +897,10 @@ class HomeScreen2(Screen):
         print(r.text[:300] + '...')
 
     def btn_lockPC(self):
-        r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=Lock&computer=NickDesktop", data={'token': triggerToken})
-        print(r.status_code, r.reason)
-        print(r.text[:300] + '...')
+        if triggerToken is not None:
+            r = requests.post("https://www.triggercmd.com/api/ifttt?trigger=Lock&computer=NickDesktop", data={'token': triggerToken})
+            print(r.status_code, r.reason)
+            print(r.text[:300] + '...')
 
     def btn_trainTimetable(self):
         webbrowser.open('https://anytrip.com.au/stop/au2:206020')

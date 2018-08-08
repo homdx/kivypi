@@ -9,6 +9,7 @@ credentials.json
 favoritePlaylist.txt
 favoriteDevice.txt
 favoriteCastDevice.txt
+WatchedVideoLog.txt
 prefs.json
 tokenData.json
 buildozer.spec
