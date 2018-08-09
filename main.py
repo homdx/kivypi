@@ -373,10 +373,6 @@ def mainThread():
                     initToken(1)
                     continue
                 time.sleep( 1 )
-                try:
-                    sm.get_screen('home').updateProgess()
-                except:
-                    print ("No such screen / error updating progress")
             else:
                 break
             if x % 10 == 0:
@@ -391,6 +387,23 @@ def mainThread():
                 getUserDevices()
         print ("Refreshing Token")
         refreshToken()
+
+def updateScreen():
+    while running:
+        if (running == 0):
+            break
+        if (sRefreshToken is None):
+                time.sleep( 1 )
+                continue
+        for x in range(0, 600): 
+            if (running):
+                time.sleep( 1 )
+                try:
+                    sm.get_screen('home').updateProgess()
+                except:
+                    print ("No such screen / error updating progress")
+            else:
+                break
 
 # Main screen
 class HomeScreen(Screen):
@@ -523,7 +536,8 @@ class HomeScreen(Screen):
                         if (p.status_code < 400):
                             print("Removed from Favorite Playlist")
                     else:
-                        alert('Track not in Favorite Playlist')
+                        #alert('Track not in Favorite Playlist')
+                        print("Track not in Favorite Playlist")
                         return
 
                     r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/" + backPlaylist, headers={'Authorization': token})
@@ -533,10 +547,12 @@ class HomeScreen(Screen):
                             print("Added to Backup Playlist")
                     
                 except:
-                    alert("Error adding to playlist")
+                    print("Error adding to playlist")
+                    #alert("Error adding to playlist")
                     return
             else:
-                alert('You need a Favorite and Backup playlist to do this')   
+                print("You need a Favorite and Backup playlist to do this")
+                #alert('You need a Favorite and Backup playlist to do this')   
 
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
@@ -604,14 +620,18 @@ class HomeScreen(Screen):
             #Toggle Playback state
             try:
                 r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-                if (r.status_code == 204 and getUserPrefs('favoriteDevice')):
-                    payload = {'device_ids':[devicesDict[getUserPrefs('favoriteDevice')]]}
-                    r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
-                    print(r.status_code, r.reason)
-                    time.sleep( 1 )
-                    r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-                    playing = r.json()['is_playing']
-                    return
+                favoriteDevice = str(getUserPrefs('favoriteDevice'))
+                if (r.status_code == 204):#Nothing playing
+                    if (favoriteDevice and favoriteDevice in devicesDict):
+                        payload = {'device_ids':[devicesDict[favoriteDevice]]}
+                        r = requests.put("https://api.spotify.com/v1/me/player", json=payload, headers={'Authorization': token})
+                        print(r.status_code, r.reason)
+                        time.sleep( 1 )
+                        r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
+                        playing = r.json()['is_playing']
+                        return
+                    else:
+                        alert('No Favorite Device or Favorite Device not available')
                 else:
                     if (r.status_code == 400):
                         alert('Bad request: ' + r.json()['error']['message'])
@@ -680,7 +700,8 @@ class HomeScreen(Screen):
                 f.close
 
             if(not getUserPrefs('favoriteCastDevice')):
-                alert('Select a default Cast device in settings')
+                #alert('Select a default Cast device in settings')
+                print("Select a default Cast device in settings")
                 return
 
             request = f(rType)
@@ -1227,9 +1248,13 @@ sm.add_widget(DevicesScreen(name='devices'))
 sm.add_widget(SettingsScreen(name='settings'))
 
 #Start thread after start
-newthread = threading.Thread(target = mainThread)
-newthread.daemon = True
-newthread.start() 
+main = threading.Thread(target = mainThread)
+main.daemon = True
+main.start() 
+
+update = threading.Thread(target = updateScreen)
+update.daemon = True
+update.start() 
 
 class PiDemoApp(App):
 
