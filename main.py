@@ -60,7 +60,7 @@ devicesDict = {}
 playlistDict = {}
 
 #stores data for currently packback data from Spotify
-playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
+playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": 'No Linked Account', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
 
 #Refresh spotfy token
 
@@ -98,11 +98,11 @@ def getPlaybackData():
             global token
             r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token, 'nocache': ''})
             if (r.status_code == 204):
-                playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+                playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": 'Nothing Playing', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
                 return
             if (r.status_code == 401):
                 token = ''
-                playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+                playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": 'Token Expired', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
                 return
             volume = ''
             device = ''
