@@ -371,7 +371,7 @@ def serverRunning():
         r = requests.get("http://localhost:5000/serverRunning")
         if r.status_code == 200:
             #alert exit app and link from browser
-            messageQueue.put('Exit app and link from web browser')
+            messageQueue.put('1. Exit app\n 2. Login to account\n 3. Open app again and click link account')
             return True
         else:
             return False
@@ -436,7 +436,7 @@ def messageWorker():
     while True:
         item = messageQueue.get()
         alert(item)
-        messageQueue.task_done()
+        #messageQueue.task_done()
 
 # Main screen
 class HomeScreen(Screen):

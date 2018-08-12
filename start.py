@@ -1,5 +1,4 @@
 import os
-import main
 
 os.chdir(os.path.dirname(__file__))
 print("Current folder: " + os.getcwd())
@@ -13,4 +12,4 @@ try:
 except Exception as e:
   print("unable to pull latest version: " + e.message)
 
-main.PiDemoApp().run()
+execfile("main.py")
