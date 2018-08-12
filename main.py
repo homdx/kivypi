@@ -14,7 +14,7 @@ import argparse
 import kivy.utils as utils
 import tokenHandler
 from threading import Event
-from queue import *
+from multiprocessing import Queue
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
 from string import ascii_lowercase
