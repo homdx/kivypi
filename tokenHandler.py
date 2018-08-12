@@ -43,5 +43,10 @@ def result():
     shutdown_server()
     return 'Received !' # response to your request.
 
+@app.route('/serverRunning', methods=['GET'])
+def runResult():
+    #let client know server is up or not
+    return 'Running'
+
 def run():
     app.run()

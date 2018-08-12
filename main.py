@@ -14,6 +14,7 @@ import argparse
 import kivy.utils as utils
 import tokenHandler
 from threading import Event
+from queue import *
 from pychromecast.controllers.youtube import YouTubeController
 from random import sample
 from string import ascii_lowercase
@@ -58,6 +59,7 @@ running = 1
 token = ''
 devicesDict = {}
 playlistDict = {}
+messageQueue = Queue()
 
 #stores data for currently packback data from Spotify
 playBackInfo = {"playing": False, "volume": '', "device": '', "deviceType": '', "shuffling": False, "currentSong": 'No Linked Account', "currentArtist": '', "progress_ms": 0,"duration_ms": 0, "seekPos": 0}
@@ -148,7 +150,7 @@ def getPlaybackData():
                 print(e.message)
             except:
                 print('Unhandled error')
-            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": '', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
+            playBackInfo = {"playing": False, "volume": '0', "device": '', "deviceType": '', "shuffling": False, "currentSong": 'Connection Error', "currentArtist": '', "progress_ms": 0, "duration_ms": 0, "seekPos": 0}
             #print (playBackInfo)
     newthread = threading.Thread(target = thread)
     newthread.daemon = True
@@ -191,7 +193,7 @@ def getUserPrefs(prefData):
     with open(prefsFilename) as jsonData:
         data = json.load(jsonData)
         if(prefData in data):
-            return data[prefData]
+            return str(data[prefData])
         else:
             return False
 
@@ -334,16 +336,20 @@ def refreshToken():
         return
 
 def newUserToken():
-    def startHandler():
-        tokenHandler.run()
-    newthread = threading.Thread(target = startHandler)
-    newthread.daemon = True
-    newthread.start()
+    startHandler()
     if LINUX:
+        #need to run as normal user
         webbrowser.open('http://13.75.194.36:8080/login')
     else:
         #run from cefpython if not Linux
         browser.run()
+
+def startHandler():
+    def startHandlerThread():
+        tokenHandler.run()
+    newthread = threading.Thread(target = startHandlerThread)
+    newthread.daemon = True
+    newthread.start()
 
 def initToken(link):
     readTokenData()
@@ -351,10 +357,30 @@ def initToken(link):
     if (token is not ''):
         getSpotifyData()
         if link:
-            alert('Linked Spotify Account: ' + userDisplayName)
+            messageQueue.put('Linked Spotify Account: ' + userDisplayName)
+
+def serverRunning():
+    try:        
+        r = requests.get("http://localhost:5000/serverRunning")
+        if r.status_code == 200:
+            #alert exit app and link from browser
+            messageQueue.put('alert exit app and link from browser')
+            return True
+        else:
+            return False
+    except:
+        return False
+
+def messageHandler():
+    #handle alert messages
+    item = messageQueue.get()
+    alert(item)
+    messageQueue.task_done()
 
 #Initialize token data 0 being that we are not linking a new account
 initToken(0)
+if (sRefreshToken is None):
+    startHandler()
 
 #Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
 def mainThread():
@@ -394,10 +420,12 @@ def updateScreen():
             break
         if (sRefreshToken is None):
                 time.sleep( 1 )
+                messageHandler()
                 continue
         for x in range(0, 600): 
             if (running):
                 time.sleep( 1 )
+                messageHandler()
                 try:
                     sm.get_screen('home').updateProgess()
                 except:
@@ -504,7 +532,7 @@ class HomeScreen(Screen):
                         if (p.status_code < 400):
                             print("Added to Playlist")
                     else:
-                        alert('Already in Favorite Playlist')
+                        messageQueue.put('Already in Favorite Playlist')
                 except:
                     print("Error adding to playlist")
                     return       
@@ -523,7 +551,7 @@ class HomeScreen(Screen):
                 r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
                 try:
                     if( r.status_code == 204 or r.json()['item'] == None):
-                        alert("Nothing playing")   
+                        messageQueue.put('Nothing playing')
                         return
                     items = r.json()['item']
                     trackId = items['id']
@@ -536,8 +564,7 @@ class HomeScreen(Screen):
                         if (p.status_code < 400):
                             print("Removed from Favorite Playlist")
                     else:
-                        #alert('Track not in Favorite Playlist')
-                        print("Track not in Favorite Playlist")
+                        messageQueue.put('Track not in Favorite Playlist')
                         return
 
                     r = requests.get("https://api.spotify.com/v1/users/" + userId + "/playlists/" + backPlaylist, headers={'Authorization': token})
@@ -547,12 +574,10 @@ class HomeScreen(Screen):
                             print("Added to Backup Playlist")
                     
                 except:
-                    print("Error adding to playlist")
-                    #alert("Error adding to playlist")
+                    messageQueue.put('Error adding to playlist')
                     return
             else:
-                print("You need a Favorite and Backup playlist to do this")
-                #alert('You need a Favorite and Backup playlist to do this')   
+                messageQueue.put('You need a Favorite and Backup playlist to do this')
 
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
@@ -631,10 +656,10 @@ class HomeScreen(Screen):
                         playing = r.json()['is_playing']
                         return
                     else:
-                        alert('No Favorite Device or Favorite Device not available')
+                        messageQueue.put('No Favorite Device or Favorite Device not available')
                 else:
                     if (r.status_code == 400):
-                        alert('Bad request: ' + r.json()['error']['message'])
+                        messageQueue.put('Bad request: ' + r.json()['error']['message'])
                         return
                     if ('is_playing' in r.json()):
                         playing = r.json()['is_playing']
@@ -645,9 +670,9 @@ class HomeScreen(Screen):
                 else:
                     Play()
             except KeyError as e:
-                alert('Unable to play on favorite device: ' + e.message)
+                messageQueue.put('Unable to play on favorite device: ' + e.message)
             except Exception as e:
-                alert("Error playing or no favorite device: " + e.message)
+                messageQueue.put('Error playing or no favorite device: " + e.message')
 
 
         newthread = threading.Thread(target = thread)
@@ -700,8 +725,7 @@ class HomeScreen(Screen):
                 f.close
 
             if(not getUserPrefs('favoriteCastDevice')):
-                #alert('Select a default Cast device in settings')
-                print("Select a default Cast device in settings")
+                messageQueue.put('Select a default Cast device in settings')
                 return
 
             request = f(rType)
@@ -759,6 +783,10 @@ class HomeScreen(Screen):
                 else:
                     print("Invalid url: " + x)
 
+            if len(thislist) is 0:
+                messageQueue.put('All videos marked as watched')
+                return
+
             # Triggers program exit
             shutdown = Event()
 
@@ -769,11 +797,11 @@ class HomeScreen(Screen):
             print([cc.device.friendly_name for cc in chromecasts])
 
             if(len(chromecasts) == 0):
-                alert('No cast devices found')
+                messageQueue.put('No cast devices found')
                 return
 
             if(getUserPrefs('favoriteCastDevice') not in [cc.device.friendly_name for cc in chromecasts]):
-                alert('Favorite device ' + getUserPrefs('favoriteCastDevice') + '  not Available')
+                messageQueue.put('Favorite device ' + getUserPrefs('favoriteCastDevice') + '  not Available')
                 return
 
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == getUserPrefs('favoriteCastDevice'))
@@ -805,7 +833,7 @@ class HomeScreen(Screen):
             filename = "YTTopWeek_All.txt"
 
             if(not getUserPrefs('favoriteCastDevice')):
-                alert('Select a default Cast device in settings')
+                messageQueue.put('Select a default Cast device in settings')
                 return
 
             with open(filename) as f:
@@ -843,11 +871,11 @@ class HomeScreen(Screen):
             print([cc.device.friendly_name for cc in chromecasts])
 
             if(len(chromecasts) == 0):
-                alert('No cast devices found')
+                messageQueue.put('No cast devices found')
                 return
 
             if(getUserPrefs('favoriteCastDevice') not in [cc.device.friendly_name for cc in chromecasts]):
-                alert('Favorite device ' + getUserPrefs('favoriteCastDevice') + '  not Available')
+                messageQueue.put('Favorite device ' + getUserPrefs('favoriteCastDevice') + '  not Available')
                 return
 
             cast = next(cc for cc in chromecasts if cc.device.friendly_name == "Chromecast")
@@ -1032,7 +1060,7 @@ class DevicesPage(BoxLayout):
             if(self.display.text == 'Favorite'):
                 setUserPrefs('favoriteDevice', name)
                 self.display.text = ''
-                alert('Added new favorite: ' + name)
+                messageQueue.put('Added new favorite: ' + name)
             else:
                 payload = {'device_ids':[devicesDict[name]]}
                 print(payload)
@@ -1081,7 +1109,7 @@ class PlaylistPage(BoxLayout):
             if(self.display.text == 'Favorite'):
                 setUserPrefs('favoritePlaylist', playlistDict[name])
                 self.display.text = ''
-                alert('Added new favorite: ' + name)
+                messageQueue.put('Added new favorite: ' + name)
             else:
                 if (playBackInfo['device'] == '' and getUserPrefs('favoriteDevice') in devicesDict):
                     payload = {'device_ids':[devicesDict[getUserPrefs('favoriteDevice')]]}
@@ -1127,7 +1155,7 @@ class SettingsPage(BoxLayout):
             self.display.text = ''
             self.populate(self.settingsDict)
             self.selectedSetting = ''
-            alert('Favorite Cast Device set: ' + settingType)
+            messageQueue.put('Favorite Cast Device set: ' + settingType)
             return
         
         if (self.selectedSetting == 'Choose Backup Playlist'):
@@ -1135,7 +1163,7 @@ class SettingsPage(BoxLayout):
             self.display.text = ''
             self.populate(self.settingsDict)
             self.selectedSetting = ''
-            alert('Backup Playlist set: ' + settingType)
+            messageQueue.put('Backup Playlist set: ' + settingType)
             return
 
         if (settingType == 'Choose Cast Device'):
@@ -1146,7 +1174,8 @@ class SettingsPage(BoxLayout):
             return
 
         if (settingType == 'Link Spotify'):
-            newUserToken()
+            if not serverRunning():
+                newUserToken()
             return
         
         if (settingType == 'Choose Backup Playlist'):
@@ -1207,7 +1236,6 @@ class LockScreen(Screen):
     def __init__(self,**kwargs):
         super(LockScreen,self).__init__(**kwargs)
         if not getUserPrefs('loginCode'):
-            #alert('Enter a new login code')
             self.newCodeLabel = Label()
             self.newCodeLabel.text = 'Enter a new login code'
             self.newCodeLabel.font_size = 36
@@ -1226,10 +1254,10 @@ class LockScreen(Screen):
             #If no existing code ch
             if len(input) >= 4 and len(input) <= 8:
                 setUserPrefs('loginCode', input)
-                alert('Login code set')
+                messageQueue.put('Login code set')
                 self.remove_widget(self.newCodeLabel)
             else:
-                alert('Login code should be 4 - 8 characters')
+                messageQueue.put('Login code should be 4 - 8 characters')
 
         self.display.text = ''
 
