@@ -327,7 +327,6 @@ def refreshToken():
         if (sRefreshToken):
             r = requests.post("http://13.75.194.36:8080/refresh_token", data={'refresh_token': sRefreshToken})
         else:
-            print ('No refresh token')
             return
         if 'access_token' in r.json():
             token = r.json()['token_type'] + ' ' + r.json()['access_token']
@@ -336,13 +335,21 @@ def refreshToken():
         return
 
 def newUserToken():
-    startHandler()
+    if not serverRunning():
+        startHandler()
     if LINUX:
         #need to run as normal user
         webbrowser.open('http://13.75.194.36:8080/login')
     else:
         #run from cefpython if not Linux
+        openCefBrowser()
+
+def openCefBrowser():
+    def startCefBrowserThread():
         browser.run()
+    newthread = threading.Thread(target = startCefBrowserThread)
+    newthread.daemon = True
+    newthread.start()
 
 def startHandler():
     def startHandlerThread():
@@ -364,18 +371,12 @@ def serverRunning():
         r = requests.get("http://localhost:5000/serverRunning")
         if r.status_code == 200:
             #alert exit app and link from browser
-            messageQueue.put('alert exit app and link from browser')
+            messageQueue.put('Exit app and link from web browser')
             return True
         else:
             return False
     except:
         return False
-
-def messageHandler():
-    #handle alert messages
-    item = messageQueue.get()
-    alert(item)
-    messageQueue.task_done()
 
 #Initialize token data 0 being that we are not linking a new account
 initToken(0)
@@ -420,18 +421,22 @@ def updateScreen():
             break
         if (sRefreshToken is None):
                 time.sleep( 1 )
-                messageHandler()
                 continue
         for x in range(0, 600): 
             if (running):
                 time.sleep( 1 )
-                messageHandler()
                 try:
                     sm.get_screen('home').updateProgess()
                 except:
                     print ("No such screen / error updating progress")
             else:
                 break
+
+def messageWorker():
+    while True:
+        item = messageQueue.get()
+        alert(item)
+        messageQueue.task_done()
 
 # Main screen
 class HomeScreen(Screen):
@@ -672,7 +677,7 @@ class HomeScreen(Screen):
             except KeyError as e:
                 messageQueue.put('Unable to play on favorite device: ' + e.message)
             except Exception as e:
-                messageQueue.put('Error playing or no favorite device: " + e.message')
+                messageQueue.put('Error playing or no favorite device: ' + e.message)
 
 
         newthread = threading.Thread(target = thread)
@@ -1142,8 +1147,8 @@ class SettingsPage(BoxLayout):
     def back(self):
         self.populate(self.settingsDict)
         self.selectedSetting = ''
-        #set screen to home
-        sm.current = 'home'
+        #set screen to home2 (settings page)
+        sm.current = 'home2'
         
 
     def populate(self, listDict):
@@ -1174,8 +1179,7 @@ class SettingsPage(BoxLayout):
             return
 
         if (settingType == 'Link Spotify'):
-            if not serverRunning():
-                newUserToken()
+            newUserToken()
             return
         
         if (settingType == 'Choose Backup Playlist'):
@@ -1280,9 +1284,15 @@ main = threading.Thread(target = mainThread)
 main.daemon = True
 main.start() 
 
+#update localdata for screen
 update = threading.Thread(target = updateScreen)
 update.daemon = True
 update.start() 
+
+#worker thread for alert messages
+worker = threading.Thread(target=messageWorker)
+worker.daemon = True
+worker.start()
 
 class PiDemoApp(App):
 
