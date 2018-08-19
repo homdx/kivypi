@@ -13,6 +13,7 @@ import signal
 import argparse
 import kivy.utils as utils
 import tokenHandler
+import subprocess
 from threading import Event
 from multiprocessing import Queue
 from pychromecast.controllers.youtube import YouTubeController
@@ -232,11 +233,11 @@ def getUserPlaylists():
         items = r.json()['items']
         playlistDict = {}
         for item in items: 
-            playlistDict[str(item['name'])] = str(item['id'])
+            playlistDict[item['name'].encode('utf-8')] = item['id'].encode('utf-8')
         
         return playlistDict
-    except:
-        print("Unable to get playlist data")
+    except Exception as e:
+        print("Unable to get playlist data" + e.message)
         return
         
 #Get current Spotify users devices   
@@ -338,8 +339,10 @@ def newUserToken():
     if not serverRunning():
         startHandler()
     if LINUX:
-        #need to run as normal user
         webbrowser.open('http://13.75.194.36:8080/login')
+        bashCommand = "matchbox-keyboard"
+        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+        output, error = process.communicate()
     else:
         #run from cefpython if not Linux
         openCefBrowser()
@@ -1237,35 +1240,46 @@ class DevicesScreen(Screen):
     pass
 
 class LockScreen(Screen): 
+    displayText = StringProperty('')
     def __init__(self,**kwargs):
         super(LockScreen,self).__init__(**kwargs)
+        self.userInput = ''
         if not getUserPrefs('loginCode'):
             self.newCodeLabel = Label()
-            self.newCodeLabel.text = 'Enter a new login code'
+            self.newCodeLabel.text = 'Enter new login code'
             self.newCodeLabel.font_size = 36
             self.newCodeLabel.font_name = "Resources/LemonMilk.otf"
             self.newCodeLabel.color = utils.get_color_from_hex('#F05F40')
-            self.newCodeLabel.center_y = 200
+            self.newCodeLabel.center_y = 225
             self.add_widget(self.newCodeLabel)
 
-    def btn_checkInput(self, input):
+    def updateInput(self, input):
+        self.userInput = self.userInput + input
+        self.displayText = self.displayText + '*'
+        return
+
+    def deleteInput(self):
+        self.userInput = self.userInput[:-1]
+        self.displayText = self.displayText[:-1]
+        return
+
+    def btn_checkInput(self):
         loginCode = getUserPrefs('loginCode')
         if loginCode:
-            if input == loginCode:
+            if self.userInput == loginCode:
                 #Correct code swap to home screen
                 sm.current = 'home'
         else:
             #If no existing code ch
-            if len(input) >= 4 and len(input) <= 8:
-                setUserPrefs('loginCode', input)
-                messageQueue.put('Login code set')
+            if len(self.userInput) >= 4 and len(self.userInput) <= 8:
+                setUserPrefs('loginCode', self.userInput)
+                alert('Login code set')
                 self.remove_widget(self.newCodeLabel)
             else:
-                messageQueue.put('Login code should be 4 - 8 characters')
+                alert('Login code should be 4 - 8 characters')
 
-        self.display.text = ''
-
-    pass
+        self.userInput = ''
+        self.displayText = ''
 
 # Create the screen manager
 print ("Before SM")
