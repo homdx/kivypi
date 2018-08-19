@@ -13,7 +13,6 @@ import signal
 import argparse
 import kivy.utils as utils
 import tokenHandler
-import subprocess
 from threading import Event
 from multiprocessing import Queue
 from pychromecast.controllers.youtube import YouTubeController
@@ -340,9 +339,6 @@ def newUserToken():
         startHandler()
     if LINUX:
         webbrowser.open('http://13.75.194.36:8080/login')
-        bashCommand = "matchbox-keyboard"
-        process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
-        output, error = process.communicate()
     else:
         #run from cefpython if not Linux
         openCefBrowser()
