@@ -36,6 +36,9 @@ from kivy.uix.listview import ListView
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.textinput import TextInput
+from kivy.core.window import Window
+from kivy.uix.vkeyboard import VKeyboard
+from functools import partial
 from kivy.base import runTouchApp
 
 os.chdir(os.path.dirname(__file__))
@@ -47,6 +50,8 @@ MAC = (osplatform.system() == "Darwin")
 
 if not LINUX:
     import browser
+else:
+    import wifi
 
 root_widget = Builder.load_file('main.kv') 
 
@@ -1040,6 +1045,66 @@ class ModifiedSlider(Slider):
             self.dispatch('on_release')
             return True
 
+class KeyboardScreen(Screen):
+    """
+    Screen containing all the available keyboard layouts. Clicking the buttons
+    switches to these layouts.
+    """
+    displayLabel = ObjectProperty()
+    kbContainer = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        super(KeyboardScreen, self).__init__(**kwargs)
+        self._add_keyboards()
+        self._keyboard = None
+
+    def _add_keyboards(self):
+        """ Add a buttons for each available keyboard layout. When clicked,
+        the buttons will change the keyboard layout to the one selected. """
+        layouts = list(VKeyboard().available_layouts.keys())
+        # Add the file in our app directory, the .json extension is required.
+        #layouts.append("numeric2.json")
+        for key in layouts:
+            self.kbContainer.add_widget(
+                Button(
+                    text=key,
+                    on_release=partial(self.set_layout, key)))
+
+    def set_layout(self, layout, button):
+        """ Change the keyboard layout to the one specified by *layout*. """
+        kb = Window.request_keyboard(
+            self._keyboard_close, self)
+        if kb.widget:
+            # If the current configuration supports Virtual Keyboards, this
+            # widget will be a kivy.uix.vkeyboard.VKeyboard instance.
+            self._keyboard = kb.widget
+            self._keyboard.layout = layout
+        else:
+            self._keyboard = kb
+
+        self._keyboard.bind(on_key_down=self.key_down,
+                            on_key_up=self.key_up)
+
+    def _keyboard_close(self, *args):
+        """ The active keyboard is being closed. """
+        if self._keyboard:
+            self._keyboard.unbind(on_key_down=self.key_down)
+            self._keyboard.unbind(on_key_up=self.key_up)
+            self._keyboard = None
+
+    def key_down(self, keyboard, keycode, text, modifiers):
+        """ The callback function that catches keyboard events. """
+        self.displayLabel.text = u"Key pressed - {0}".format(text)
+
+    # def key_up(self, keyboard, keycode):
+    def key_up(self, keyboard, keycode, *args):
+        """ The callback function that catches keyboard events. """
+        # system keyboard keycode: (122, 'z')
+        # dock keyboard keycode: 'z'
+        if isinstance(keycode, tuple):
+            keycode = keycode[1]
+        self.displayLabel.text += u" (up {0})".format(keycode)
+
 class DevicesPage(BoxLayout):
     def __init__(self,screen,name,**kwargs):
         super(DevicesPage,self).__init__(**kwargs)
@@ -1140,6 +1205,8 @@ class SettingsPage(BoxLayout):
         self.entry = ''
         self.display.text = ''
         self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify'}
+        if LINUX:
+            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify', 'Wifi'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
@@ -1148,7 +1215,96 @@ class SettingsPage(BoxLayout):
         self.selectedSetting = ''
         #set screen to home2 (settings page)
         sm.current = 'home2'
+
+    def Search(self):
+        wifilist = []
+
+        cells = self.wifi.Cell.all('wlan0')
+
+        for cell in cells:
+            wifilist.append(cell)
+
+        return wifilist
+
+    def FindFromSearchList(self, ssid):
+        wifilist = self.Search()
+
+        for cell in wifilist:
+            if cell.ssid == ssid:
+                return cell
+
+        return False
+
+
+    def FindFromSavedList(self, ssid):
+        cell = wifi.Scheme.find('wlan0', ssid)
+
+        if cell:
+            return cell
+
+        return False
+
+    def Connect(self, ssid, password=None):
+        cell = self.FindFromSearchList(ssid)
+
+        if cell:
+            savedcell = self.FindFromSavedList(cell.ssid)
+
+            # Already Saved from Setting
+            if savedcell:
+                savedcell.activate()
+                return cell
+
+            # First time to conenct
+            else:
+                if cell.encrypted:
+                    if password:
+                        scheme = self.Add(cell, password)
+
+                        try:
+                            scheme.activate()
+
+                        # Wrong Password
+                        except wifi.exceptions.ConnectionError:
+                            self.Delete(ssid)
+                            return False
+
+                        return cell
+                    else:
+                        return False
+                else:
+                    scheme = self.Add(cell)
+
+                    try:
+                        scheme.activate()
+                    except wifi.exceptions.ConnectionError:
+                        self.Delete(ssid)
+                        return False
+
+                    return cell
         
+        return False
+
+    def Add(self, cell, password=None):
+        if not cell:
+            return False
+
+        scheme = wifi.Scheme.for_cell('wlan0', cell.ssid, cell, password)
+        scheme.save()
+        return scheme
+
+
+    def Delete(self, ssid):
+        if not ssid:
+            return False
+
+        cell = self.FindFromSavedList(ssid)
+
+        if cell:
+            cell.delete()
+            return True
+
+        return False
 
     def populate(self, listDict):
         self.rv.data = [{'value': x} for x in listDict]
@@ -1178,11 +1334,16 @@ class SettingsPage(BoxLayout):
             return
 
         if (settingType == 'Link Spotify'):
-            newUserToken()
+            #newUserToken()
+
             return
         
         if (settingType == 'Choose Backup Playlist'):
             self.populate(playlistDict)
+            self.selectedSetting = settingType
+            return
+        if (settingType == 'Wifi'):
+            self.populate(self.Search())
             self.selectedSetting = settingType
             return
         
@@ -1288,6 +1449,7 @@ sm.add_widget(CalandarScreen(name='calandar'))
 sm.add_widget(PlaylistScreen(name='playlists'))
 sm.add_widget(DevicesScreen(name='devices'))
 sm.add_widget(SettingsScreen(name='settings'))
+sm.add_widget(KeyboardScreen(name="keyboard"))
 
 #Start thread after start
 main = threading.Thread(target = mainThread)

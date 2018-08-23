@@ -240,9 +240,10 @@
             width: 147.5
             on_press: root.btn_refresh();
         CustButton:
-            text: ""
+            text: "KB"
             size_hint: None, .235
             width: 147.5
+            on_press: root.manager.current = 'keyboard'
         CustButton:
             text: ""
             size_hint: None, .235
@@ -319,7 +320,34 @@
                 size: 250, 250
                 allow_stretch: True
                 height: dp(120)
-            
+
+<KeyboardScreen>:
+    displayLabel: displayLabel
+    kbContainer: kbContainer
+    BoxLayout:
+        orientation: 'vertical'
+        Label:
+            size_hint_y: 0.15
+            text: "Available Keyboard Layouts"
+        BoxLayout:
+            id: kbContainer
+            size_hint_y: 0.2
+            orientation: "horizontal"
+            padding: 10
+        Label:
+            id: displayLabel
+            size_hint_y: 0.15
+            markup: True
+            text: "[b]Key pressed[/b] - None"
+            halign: "center"
+        Button:
+            text: "Back"
+            size_hint_y: 0.1
+            on_release: root.manager.current = "mode"
+        Widget:
+            # Just a space taker to allow for the popup keyboard
+            size_hint_y: 0.5
+
 <LockScreen>:
     id: lockscreen
     GridLayout:
