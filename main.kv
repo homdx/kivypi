@@ -626,22 +626,40 @@
 
 <VolumePopup>:
     title: ""
-    separator_height: 0
+    size_hint_y: 0.5
+    size_hint_x: 0.5
     BoxLayout:
-        title: "Volume Page"
-        orientation: "vertical"
+        orientation: "horizontal"
+        spacing: 10
+        padding: 10
+        canvas.before:
+            Color:
+                rgb: utils.get_color_from_hex('#4C626C')
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        Slider:
+            text: "Select Volume"
+            size_hint_y: 0.8
+            size_hint_x: 1
+            on_value: root.screen.volume_buttonText = str(self.value).split(".")[0]
         Button:
+            size_hint_y: 0.15
+            size_hint_x: self.size_hint_x
             text: "+1"
             on_release: root.btn_volUp()
         Button:
+            size_hint_y: 0.15
+            size_hint_x: self.size_hint_x
             text: "-1"
             on_release: root.btn_volDown()
-        Slider:
-            text: "Select Volume"
-            on_value: root.screen.volume_buttonText = str(self.value)
         Button:
-            text: "Done"
+            size_hint_y: 0.15
+            size_hint_x: self.size_hint_x
+            text: "Update"
             on_release: root.closeandUpdate()
         Button:
+            size_hint_y: 0.15
+            size_hint_x: self.size_hint_x
             text: "Exit"
             on_release: root.exitandUpdate()

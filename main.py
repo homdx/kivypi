@@ -172,7 +172,7 @@ def setVolume(volume):
         print(r.status_code, r.reason)
         print(r.text[:300] + '...')
     except:
-        print("Nothing Playing")
+        print("Unable to update volume")
 
 #get user info for Spotify account
 def getUserInfo():
@@ -973,11 +973,15 @@ class VolumePopup(Popup):
     def __init__(self,screen,**kwargs):
         super(VolumePopup,self).__init__(**kwargs)
         self.screen = screen
+        global playBackInfo
         self.volume = playBackInfo['volume']
+        print ('Test:')
+        print (playBackInfo['volume'])
     
     def closeandUpdate(self):
         def thread():
             setVolume(self.screen.volume_buttonText)
+        #the number from the slider is a decimal/float, convert it to a whole number before using it
         self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
@@ -986,8 +990,8 @@ class VolumePopup(Popup):
 
     def exitandUpdate(self):
         def thread():
+            global playBackInfo
             self.screen.volume_buttonText = playBackInfo['volume']
-        self.screen.volume_buttonText = self.screen.volume_buttonText.split(".")[0]
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
         newthread.start()
@@ -995,38 +999,20 @@ class VolumePopup(Popup):
 
     def btn_volDown(self):
         def thread():
-            #Vol down*
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            try:
-                voldict = r.json()['device']
-                volume = voldict['volume_percent']
-                volume = int(volume) - 1
-                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-                global playBackInfo
-                playBackInfo['volume'] = str(volume)
-            except:
-                print("Nothing Playing")
-                return
-
+            global playBackInfo
+            volumeUpdate = int(playBackInfo['volume'])-1
+            setVolume(volumeUpdate)
+            self.screen.volume_buttonText = str(volumeUpdate)    
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
         newthread.start()
 
     def btn_volUp(self):
         def thread():
-            #Vol down
-            r = requests.get("https://api.spotify.com/v1/me/player", headers={'Authorization': token})
-            try:
-                voldict = r.json()['device']
-                volume = voldict['volume_percent']
-                volume = int(volume) + 1
-                r = requests.put("https://api.spotify.com/v1/me/player/volume?volume_percent=" + str(volume), headers={'Authorization': token})
-                global playBackInfo
-                playBackInfo['volume'] = str(volume)
-            except:
-                print("Nothing Playing")
-                return
-
+            global playBackInfo
+            volumeUpdate = int(playBackInfo['volume'])+1
+            setVolume(volumeUpdate)
+            self.screen.volume_buttonText = str(volumeUpdate)    
         newthread = threading.Thread(target = thread)
         newthread.daemon = True
         newthread.start()
