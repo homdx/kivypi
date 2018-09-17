@@ -49,4 +49,4 @@ def runResult():
     return 'Running'
 
 def run():
-    app.run()
+    app.run(port=80)
