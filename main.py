@@ -342,11 +342,11 @@ def refreshToken():
 def newUserToken():
     if not serverRunning():
         startHandler()
-    if LINUX:
-        webbrowser.open('http://13.75.194.36:8080/login')
-    else:
+    #if LINUX:
+        #webbrowser.open('http://13.75.194.36:8080/login')
+    #else:
         #run from cefpython if not Linux
-        openCefBrowser()
+        #openCefBrowser()
 
 def openCefBrowser():
     def startCefBrowserThread():
@@ -933,6 +933,9 @@ class HomeScreen2(Screen):
         self.volPopup = VolumePopup(self)
         self.button_text = self.btn_checkIP()
 
+    def runServer(self):
+        newUserToken()
+
     def checkRunning(self):
         if(serverRunning()):
             alert('Running')
@@ -1338,7 +1341,7 @@ class SettingsPage(BoxLayout):
             return
 
         if (settingType == 'Link Spotify'):
-            #newUserToken()
+            newUserToken()
 
             return
         
