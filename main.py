@@ -1,3 +1,4 @@
+from os import environ; environ['SDL_VIDEO_ALLOW_SCREENSAVER'] = '1'
 from __future__ import print_function
 import kivy
 import requests
