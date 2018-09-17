@@ -48,5 +48,5 @@ def runResult():
     #let client know server is up or not
     return 'Running'
 
-def run():
-    app.run(port=80)
+def run(ip):
+    app.run(host=ip, port=80)

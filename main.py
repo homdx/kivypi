@@ -271,6 +271,16 @@ def convertMs(millis):
 
     return ("%d:%02d" % (minutes, seconds))
 
+def checkIP():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return 'Cant Connect'
+
 #updates the frontend display with the expected progress of music playback
 def updateLocalMedia(local_ms):
     global playBackInfo
@@ -357,7 +367,8 @@ def openCefBrowser():
 
 def startHandler():
     def startHandlerThread():
-        tokenHandler.run()
+        ip = checkIP()
+        tokenHandler.run(ip)
     newthread = threading.Thread(target = startHandlerThread)
     newthread.daemon = True
     newthread.start()
@@ -371,8 +382,9 @@ def initToken(link):
             messageQueue.put('Linked Spotify Account: ' + userDisplayName)
 
 def serverRunning():
-    try:        
-        r = requests.get("http://localhost:5000/serverRunning")
+    try:
+        ip = checkIP()
+        r = requests.get("http:/"+ ip +":80/serverRunning")
         if r.status_code == 200:
             #alert exit app and link from browser
             messageQueue.put('1. Exit app\n 2. Login to account\n 3. Open app again and click link account')
@@ -938,7 +950,7 @@ class HomeScreen2(Screen):
 
     def checkRunning(self):
         if(serverRunning()):
-            alert('Running')
+            messageQueue.put('Running')
 
     def btn_exit(self):
         global running
@@ -1437,10 +1449,10 @@ class LockScreen(Screen):
             #If no existing code ch
             if len(self.userInput) >= 4 and len(self.userInput) <= 8:
                 setUserPrefs('loginCode', self.userInput)
-                alert('Login code set')
+                messageQueue.put('Login code set')
                 self.remove_widget(self.newCodeLabel)
             else:
-                alert('Login code should be 4 - 8 characters')
+                messageQueue.put('Login code should be 4 - 8 characters')
 
         self.userInput = ''
         self.displayText = ''
