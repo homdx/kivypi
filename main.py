@@ -933,6 +933,10 @@ class HomeScreen2(Screen):
         self.volPopup = VolumePopup(self)
         self.button_text = self.btn_checkIP()
 
+    def checkRunning(self):
+        if(serverRunning()):
+            alert('Running')
+
     def btn_exit(self):
         global running
         running = 0
