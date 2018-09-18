@@ -354,16 +354,12 @@ def refreshToken():
 def newUserToken():
     if not serverRunning():
         startHandler()
-        ip = checkIP()
-        split = ip.split('.')
-        print (split)
-        code = split[len(split)-1]
-        messageQueue.put('1. Open "' + authBaseUrl + ':8080/login' + '" on phone / browser\n2. Login to Spotify account\n3. Enter code: "' + code + '" and click "Pass token to Pi"')
-    #if LINUX:
-        #webbrowser.open('http://13.75.194.36:8080/login')
-    #else:
-        #run from cefpython if not Linux
-        #openCefBrowser()
+    
+    ip = checkIP()
+    split = ip.split('.')
+    print (split)
+    code = split[len(split)-1]
+    messageQueue.put('1. Open "' + authBaseUrl + ':8080/login' + '" on phone / browser\n2. Login to Spotify account\n3. Enter code: "' + code + '" and click "Pass token to Pi"')
 
 def openCefBrowser():
     def startCefBrowserThread():
