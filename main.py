@@ -60,6 +60,7 @@ sBasic = None
 sAccessToken = None
 sRefreshToken = None
 triggerToken = None
+authBaseUrl = "http://13.75.194.36"
 
 running = 1
 token = ''
@@ -250,7 +251,7 @@ def getUserDevices():
     def thread():
         try:
             global devicesDict
-            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token}, timeout=10)
             devicesDict = {}
             devices = r.json()['devices']
             for device in devices:
@@ -341,7 +342,7 @@ def refreshToken():
     try:
         global token
         if (sRefreshToken):
-            r = requests.post("http://13.75.194.36:8080/refresh_token", data={'refresh_token': sRefreshToken})
+            r = requests.post(authBaseUrl + ":8080/refresh_token", data={'refresh_token': sRefreshToken})
         else:
             return
         if 'access_token' in r.json():
@@ -353,6 +354,11 @@ def refreshToken():
 def newUserToken():
     if not serverRunning():
         startHandler()
+        ip = checkIP()
+        split = ip.split('.')
+        print (split)
+        code = split[len(split)-1]
+        messageQueue.put('1. Open "' + authBaseUrl + ':8080/login' + '" on phone / browser\n2. Login to Spotify account\n3. Enter code: "' + code + '" and click "Pass token to Pi"')
     #if LINUX:
         #webbrowser.open('http://13.75.194.36:8080/login')
     #else:
@@ -385,10 +391,10 @@ def initToken(link):
 def serverRunning():
     try:
         ip = checkIP()
-        r = requests.get("http:/"+ ip +":80/serverRunning")
+        baseURL = "http://"+ ip +"/serverRunning"
+        r = requests.get(baseURL)
         if r.status_code == 200:
             #alert exit app and link from browser
-            messageQueue.put('1. Exit app\n 2. Login to account\n 3. Open app again and click link account')
             return True
         else:
             return False
@@ -1224,9 +1230,9 @@ class SettingsPage(BoxLayout):
         self.name = name
         self.entry = ''
         self.display.text = ''
-        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify'}
+        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
         if LINUX:
-            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify', 'Wifi'}
+            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist', 'Wifi'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
