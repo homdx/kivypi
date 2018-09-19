@@ -342,7 +342,7 @@ def refreshToken():
     try:
         global token
         if (sRefreshToken):
-            r = requests.post(authBaseUrl + ":8080/refresh_token", data={'refresh_token': sRefreshToken})
+            r = requests.post(authBaseUrl + ":8080/refresh_token", data={'refresh_token': sRefreshToken}, timeout=10)
         else:
             return
         if 'access_token' in r.json():
@@ -1025,7 +1025,9 @@ class DebugPopup(Popup):
                 g = git.cmd.Git(git_dir)
                 g.checkout(button.text)
         except Exception as e:
-            print("unable to pull latest version: " + e.message)
+            print("unable to checkout branch: " + e.message)
+            messageQueue.put('Unable to checkout branch')
+
 
 class VolumePopup(Popup):
 
@@ -1386,7 +1388,8 @@ class SettingsPage(BoxLayout):
             self.selectedSetting = settingType
             return
         if (settingType == 'Wifi'):
-            self.populate(self.Search())
+            print(self.Search())
+            #self.populate(self.Search())
             self.selectedSetting = settingType
             return
         
