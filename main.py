@@ -1,4 +1,5 @@
 from __future__ import print_function
+from os import environ; environ['SDL_VIDEO_ALLOW_SCREENSAVER'] = '1'
 import kivy
 import requests
 import json
@@ -59,6 +60,7 @@ sBasic = None
 sAccessToken = None
 sRefreshToken = None
 triggerToken = None
+authBaseUrl = "http://13.75.194.36"
 
 running = 1
 token = ''
@@ -249,7 +251,7 @@ def getUserDevices():
     def thread():
         try:
             global devicesDict
-            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token})
+            r = requests.get("https://api.spotify.com/v1/me/player/devices", headers={'Authorization': token}, timeout=10)
             devicesDict = {}
             devices = r.json()['devices']
             for device in devices:
@@ -270,6 +272,16 @@ def convertMs(millis):
     minutes = int(minutes)
 
     return ("%d:%02d" % (minutes, seconds))
+
+def checkIP():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except:
+        return 'Cant Connect'
 
 #updates the frontend display with the expected progress of music playback
 def updateLocalMedia(local_ms):
@@ -330,7 +342,7 @@ def refreshToken():
     try:
         global token
         if (sRefreshToken):
-            r = requests.post("http://13.75.194.36:8080/refresh_token", data={'refresh_token': sRefreshToken})
+            r = requests.post(authBaseUrl + ":8080/refresh_token", data={'refresh_token': sRefreshToken})
         else:
             return
         if 'access_token' in r.json():
@@ -342,11 +354,12 @@ def refreshToken():
 def newUserToken():
     if not serverRunning():
         startHandler()
-    if LINUX:
-        webbrowser.open('http://13.75.194.36:8080/login')
-    else:
-        #run from cefpython if not Linux
-        openCefBrowser()
+    
+    ip = checkIP()
+    split = ip.split('.')
+    print (split)
+    code = split[len(split)-1]
+    messageQueue.put('1. Open "' + authBaseUrl + ':8080/login' + '" on phone / browser\n2. Login to Spotify account\n3. Enter code: "' + code + '" and click "Pass token to Pi"')
 
 def openCefBrowser():
     def startCefBrowserThread():
@@ -357,7 +370,8 @@ def openCefBrowser():
 
 def startHandler():
     def startHandlerThread():
-        tokenHandler.run()
+        ip = checkIP()
+        tokenHandler.run(ip)
     newthread = threading.Thread(target = startHandlerThread)
     newthread.daemon = True
     newthread.start()
@@ -371,11 +385,12 @@ def initToken(link):
             messageQueue.put('Linked Spotify Account: ' + userDisplayName)
 
 def serverRunning():
-    try:        
-        r = requests.get("http://localhost:5000/serverRunning")
+    try:
+        ip = checkIP()
+        baseURL = "http://"+ ip +"/serverRunning"
+        r = requests.get(baseURL)
         if r.status_code == 200:
             #alert exit app and link from browser
-            messageQueue.put('1. Exit app\n 2. Login to account\n 3. Open app again and click link account')
             return True
         else:
             return False
@@ -933,12 +948,31 @@ class HomeScreen2(Screen):
         self.volPopup = VolumePopup(self)
         self.button_text = self.btn_checkIP()
 
+    def runServer(self):
+        newUserToken()
+
+    def checkRunning(self):
+        if(serverRunning()):
+            messageQueue.put('Running')
+
     def btn_exit(self):
         global running
         running = 0
         App.get_running_app().stop()
 
     def btn_checkIP(self):
+        def thread():
+            oldtime = time.time()
+            while self.ids.IP.state == "down":
+                #if user holds down for 2 seconds open debug Popup
+                if time.time() - oldtime > 3:
+                    #messageQueue.put('Opening Debug')
+                    DebugPopup(self).open()
+                    break
+        newthread = threading.Thread(target = thread)
+        newthread.daemon = True
+        newthread.start()
+
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
@@ -947,6 +981,7 @@ class HomeScreen2(Screen):
             return ip
         except:
             return 'Cant Connect'
+        
 
     def btn_slack(self):
         #IFTTT Post to Slack
@@ -967,6 +1002,30 @@ class HomeScreen2(Screen):
         refreshToken()
 
     pass
+
+class DebugPopup(Popup):
+    def __init__(self,screen,**kwargs):
+        super(DebugPopup,self).__init__(**kwargs)
+        self.screen = screen
+        self.size_hint = (.5, .5)
+        self.title = 'Choose Branch'
+        layout = BoxLayout(spacing=10, orientation="vertical")
+        layout.add_widget(Button(text="develop", on_press=self.changeBranch))
+        layout.add_widget(Button(text="test", on_press=self.changeBranch))
+        layout.add_widget(Button(text="beta", on_press=self.changeBranch))
+        layout.add_widget(Button(text="master", on_press=self.changeBranch))
+        self.add_widget(layout)
+
+    def changeBranch(self, button):
+        try:
+            print(button.text)
+            if LINUX:
+                import git
+                git_dir = os.getcwd()
+                g = git.cmd.Git(git_dir)
+                g.checkout(button.text)
+        except Exception as e:
+            print("unable to pull latest version: " + e.message)
 
 class VolumePopup(Popup):
 
@@ -1190,9 +1249,9 @@ class SettingsPage(BoxLayout):
         self.name = name
         self.entry = ''
         self.display.text = ''
-        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify'}
+        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
         if LINUX:
-            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist' ,'Link Spotify', 'Wifi'}
+            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
@@ -1320,7 +1379,7 @@ class SettingsPage(BoxLayout):
             return
 
         if (settingType == 'Link Spotify'):
-            #newUserToken()
+            newUserToken()
 
             return
         
@@ -1416,10 +1475,10 @@ class LockScreen(Screen):
             #If no existing code ch
             if len(self.userInput) >= 4 and len(self.userInput) <= 8:
                 setUserPrefs('loginCode', self.userInput)
-                alert('Login code set')
+                messageQueue.put('Login code set')
                 self.remove_widget(self.newCodeLabel)
             else:
-                alert('Login code should be 4 - 8 characters')
+                messageQueue.put('Login code should be 4 - 8 characters')
 
         self.userInput = ''
         self.displayText = ''

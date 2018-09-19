@@ -229,20 +229,10 @@
             width: 147.5
             on_press: root.manager.current = 'settings'
         CustButton:
-            text: "Train\nTimetable"
+            text: "Link Spotify"
             size_hint: None, .235
             width: 147.5
-            on_press: root.btn_trainTimetable();
-        CustButton:
-            text: "Refresh\nToken"
-            size_hint: None, .235
-            width: 147.5
-            on_press: root.btn_refresh();
-        CustButton:
-            text: "KB"
-            size_hint: None, .235
-            width: 147.5
-            on_press: root.manager.current = 'keyboard'
+            on_press: root.runServer();
         CustButton:
             text: ""
             size_hint: None, .235
@@ -287,10 +277,20 @@
             text: ""
             size_hint: None, .235
             width: 147.5
+        CustButton:
+            text: ""
+            size_hint: None, .235
+            width: 147.5
+        CustButton:
+            text: "Ping Server"
+            size_hint: None, .235
+            width: 147.5
+            on_press: root.checkRunning();
         CustButton:
             text: root.button_text
             size_hint: None, .235
             width: 147.5
+            id: IP
             on_press: root.button_text = root.btn_checkIP();
         CustButton:
             text: "Exit"

@@ -10,6 +10,7 @@ kivy
 enum34
 flask
 GitPython
+wifi
 requests>=2.0
 protobuf>=3.0.0
 zeroconf==0.19.1
