@@ -626,7 +626,7 @@
 
 <VolumePopup>:
     title: ""
-    size_hint_y: 0.25
+    size_hint_y: 0.4
     size_hint_x: 0.5
     StackLayout:
         orientation: "lr-tb"
@@ -642,21 +642,21 @@
                 size: self.size
         Slider:
             text: "Select Volume"
-            size_hint_y: 0.5
+            size_hint_y: 0.3
             size_hint_x: 1
             on_value: root.screen.volume_buttonText = str(self.value).split(".")[0]
         Button:
-            size_hint_y: 0.5
+            size_hint_y: 0.7
             size_hint_x: 0.33
             text: "+1"
             on_release: root.btn_volUp()
         Button:
-            size_hint_y: 0.5
+            size_hint_y: 0.7
             size_hint_x: 0.33
             text: "-1"
             on_release: root.btn_volDown()
         Button:
-            size_hint_y: 0.5
+            size_hint_y: 0.7
             size_hint_x: 0.33
             text: "Update"
             on_release: root.closeandUpdate()

@@ -1034,8 +1034,6 @@ class VolumePopup(Popup):
         self.screen = screen
         global playBackInfo
         self.volume = playBackInfo['volume']
-        print ('Test:')
-        print (playBackInfo['volume'])
     
     def closeandUpdate(self):
         def thread():
