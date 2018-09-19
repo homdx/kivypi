@@ -961,6 +961,18 @@ class HomeScreen2(Screen):
         App.get_running_app().stop()
 
     def btn_checkIP(self):
+        def thread():
+            oldtime = time.time()
+            while self.ids.IP.state == "down":
+                #if user holds down for 2 seconds open debug Popup
+                if time.time() - oldtime > 3:
+                    #messageQueue.put('Opening Debug')
+                    DebugPopup(self).open()
+                    break
+        newthread = threading.Thread(target = thread)
+        newthread.daemon = True
+        newthread.start()
+
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             s.connect(("8.8.8.8", 80))
@@ -969,6 +981,7 @@ class HomeScreen2(Screen):
             return ip
         except:
             return 'Cant Connect'
+        
 
     def btn_slack(self):
         #IFTTT Post to Slack
@@ -989,6 +1002,30 @@ class HomeScreen2(Screen):
         refreshToken()
 
     pass
+
+class DebugPopup(Popup):
+    def __init__(self,screen,**kwargs):
+        super(DebugPopup,self).__init__(**kwargs)
+        self.screen = screen
+        self.size_hint = (.5, .5)
+        self.title = 'Choose Branch'
+        layout = BoxLayout(spacing=10, orientation="vertical")
+        layout.add_widget(Button(text="develop", on_press=self.changeBranch))
+        layout.add_widget(Button(text="test", on_press=self.changeBranch))
+        layout.add_widget(Button(text="beta", on_press=self.changeBranch))
+        layout.add_widget(Button(text="master", on_press=self.changeBranch))
+        self.add_widget(layout)
+
+    def changeBranch(self, button):
+        try:
+            print(button.text)
+            if LINUX:
+                import git
+                git_dir = os.getcwd()
+                g = git.cmd.Git(git_dir)
+                g.checkout(button.text)
+        except Exception as e:
+            print("unable to pull latest version: " + e.message)
 
 class VolumePopup(Popup):
 
@@ -1228,7 +1265,7 @@ class SettingsPage(BoxLayout):
         self.display.text = ''
         self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
         if LINUX:
-            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist', 'Wifi'}
+            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
