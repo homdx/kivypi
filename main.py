@@ -1249,7 +1249,7 @@ class SettingsPage(BoxLayout):
         self.display.text = ''
         self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
         if LINUX:
-            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
+            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist', 'Wifi'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
@@ -1262,7 +1262,7 @@ class SettingsPage(BoxLayout):
     def Search(self):
         wifilist = []
 
-        cells = self.wifi.Cell.all('wlan0')
+        cells = wifi.Cell.all('wlan0')
 
         for cell in cells:
             wifilist.append(cell)
