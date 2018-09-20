@@ -1066,9 +1066,10 @@ class WifiScreen(Screen):
         self.pw.text =  self.pw.text[:-1]
         return
 
-    def closeScreen(self,button):
+    def closeScreen(self):
         Window.release_all_keyboards()
         sm.current = 'home'
+        sm.remove_screen(sm.get_screen('wifi'))
 
     def _keyboard_close(self, *args):
         """ The active keyboard is being closed. """
@@ -1100,14 +1101,14 @@ class WifiScreen(Screen):
             return
 
         if keycode == 'enter':
-            self.Connect(self.wifiName, self.userInput)
-            Window.release_all_keyboards()
-            sm.current = 'home'
+            if (not self.Connect(self.wifiName, self.userInput)):
+                messageQueue.put('Unable to connect to network: ' self.wifiName)
+            self.closeScreen()
             return
 
         if keycode == 'escape':
             Window.release_all_keyboards()
-            sm.current = 'home'
+            self.closeScreen()
             return
         # system keyboard keycode: (122, 'z')
         # dock keyboard keycode: 'z'
@@ -1450,6 +1451,8 @@ class SettingsPage(BoxLayout):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
+        sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
+        sm.current = 'wifi'
         if (self.selectedSetting == 'Wifi'):
             sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
             sm.current = 'wifi'
