@@ -1033,11 +1033,11 @@ class WifiScreen(Screen):
         self.title = 'Enter Wifi Password'
         self.wifiName = wifiName
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreen))
+        layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreenButton))
         self.pw = Label(text='',)
         self.userInput = ''
         layout.add_widget(self.pw)
-        layout.add_widget(Button(text="Back", on_press=self.closeScreen))
+        layout.add_widget(Button(text="Back", on_press=self.closeScreenButton))
         self.add_widget(layout)
 
         self._keyboard = None
@@ -1063,6 +1063,10 @@ class WifiScreen(Screen):
         self.userInput = self.userInput[:-1]
         self.pw.text =  self.pw.text[:-1]
         return
+
+    def closeScreenButton(self, button):
+        Window.release_all_keyboards()
+        sm.current = 'home'
 
     def closeScreen(self):
         Window.release_all_keyboards()
