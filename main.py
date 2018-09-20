@@ -1032,10 +1032,11 @@ class WifiScreen(Screen):
     def __init__(self, **kwargs):
         super(WifiScreen, self).__init__(**kwargs)
         self.title = 'Enter Wifi Password'
-        self.wifiName = ''
+        self.wifiName = 'None'
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreen))
-        self.pw = Label(text='',)
+        self.btn = Button(text='Enter Wifi Password for network: ' + self.wifiName, on_press=self.closeScreen)
+        layout.add_widget(self.btn)
+        self.pw = Label(text='')
         self.userInput = ''
         layout.add_widget(self.pw)
         layout.add_widget(Button(text="Back", on_press=self.closeScreen))
@@ -1046,6 +1047,7 @@ class WifiScreen(Screen):
     def set_layout(self, layout):
         global wifiName
         self.wifiName = wifiName
+        self.btn.text = 'Enter Wifi Password for network: ' + self.wifiName
         kb = Window.request_keyboard(
             self._keyboard_close, self)
         if kb.widget:
