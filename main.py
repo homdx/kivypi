@@ -1403,10 +1403,10 @@ class SettingsPage(BoxLayout):
                 id = 0
                 print (item)
                 print (item['ssid'])
-                wifiDict[item['ssid'].encode('utf-8')] = id.encode('utf-8')
+                wifiDict[item['ssid'].encode('utf-8')] = id
                 id = id+1
             print (wifiDict)
-            #self.populate(self.Search())
+            self.populate(wifiDict)
             self.selectedSetting = settingType
             return
         
