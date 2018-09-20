@@ -69,7 +69,7 @@ RUN sed s/'name="java.target" value="1.5"'/'name="java.target" value="7"'/ -i ${
 
 #USER ${USER}
 
-RUN time buildozer android debug || echo "Fix build hello world" \
+RUN buildozer init && time buildozer android debug || echo "Fix build hello world" \
     && /bin/true
 
 CMD tail -f /var/log/faillog
