@@ -1114,6 +1114,16 @@ class WifiScreen(Screen):
 
         self.updateInput(keycode)
 
+    def Search(self):
+        wifilist = []
+
+        cells = wifi.Cell.all('wlan0')
+
+        for cell in cells:
+            wifilist.append(cell)
+
+        return wifilist
+
     def FindFromSearchList(self, ssid):
         wifilist = self.Search()
 
