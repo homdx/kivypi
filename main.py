@@ -1457,9 +1457,6 @@ class SettingsPage(BoxLayout):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
-        sm.current = 'wifi'
-        sm.get_screen('wifi').set_layout('qwerty')
-        return
         if (self.selectedSetting == 'Wifi'):
             self.display.text = ''
             self.selectedSetting = ''
