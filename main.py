@@ -61,6 +61,7 @@ sAccessToken = None
 sRefreshToken = None
 triggerToken = None
 authBaseUrl = "http://13.75.194.36"
+wifiName = ''
 
 running = 1
 token = ''
@@ -1028,26 +1029,29 @@ class DebugPopup(Popup):
 
 class WifiScreen(Screen):
 
-    def __init__(self, wifiName, **kwargs):
+    def __init__(self, **kwargs):
         super(WifiScreen, self).__init__(**kwargs)
         self.title = 'Enter Wifi Password'
+        global wifiName
         self.wifiName = wifiName
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreenButton))
+        layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreen))
         self.pw = Label(text='',)
         self.userInput = ''
         layout.add_widget(self.pw)
-        layout.add_widget(Button(text="Back", on_press=self.closeScreenButton))
+        layout.add_widget(Button(text="Back", on_press=self.closeScreen))
         self.add_widget(layout)
 
         self._keyboard = None
+
+    def set_layout(self, layout):
         kb = Window.request_keyboard(
             self._keyboard_close, self)
         if kb.widget:
             # If the current configuration supports Virtual Keyboards, this
             # widget will be a kivy.uix.vkeyboard.VKeyboard instance.
             self._keyboard = kb.widget
-            self._keyboard.layout = 'qwerty'
+            self._keyboard.layout = layout
         else:
             self._keyboard = kb
 
@@ -1064,13 +1068,11 @@ class WifiScreen(Screen):
         self.pw.text =  self.pw.text[:-1]
         return
 
-    def closeScreenButton(self, button):
+    def closeScreen(self, button):
         Window.release_all_keyboards()
         sm.current = 'home'
-
-    def closeScreen(self):
-        Window.release_all_keyboards()
-        sm.current = 'home'
+        self.userInput = ''
+        self.pw.text = ''
 
     def _keyboard_close(self, *args):
         """ The active keyboard is being closed. """
@@ -1108,11 +1110,11 @@ class WifiScreen(Screen):
             except Exception as e:
                 print (e.message)
                 messageQueue.put('Unable to connect to network: ' + self.wifiName)
-            self.closeScreen()
+            self.closeScreen(keycode)
             return
 
         if keycode == 'escape':
-            self.closeScreen()
+            self.closeScreen(keycode)
             return
         # system keyboard keycode: (122, 'z')
         # dock keyboard keycode: 'z'
@@ -1455,12 +1457,16 @@ class SettingsPage(BoxLayout):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
+        sm.current = 'wifi'
+        sm.get_screen('wifi').set_layout('qwerty')
+        return
         if (self.selectedSetting == 'Wifi'):
-            sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
-            sm.current = 'wifi'
             self.display.text = ''
-            self.populate(self.settingsDict)
             self.selectedSetting = ''
+            global wifiName
+            wifiName = settingType
+            sm.current = 'wifi'
+            sm.get_screen('wifi').set_layout('qwerty')
             return
 
         if (self.selectedSetting == 'Cast'):
@@ -1616,7 +1622,7 @@ sm.add_widget(CalandarScreen(name='calandar'))
 sm.add_widget(PlaylistScreen(name='playlists'))
 sm.add_widget(DevicesScreen(name='devices'))
 sm.add_widget(SettingsScreen(name='settings'))
-sm.add_widget(KeyboardScreen(name="keyboard"))
+sm.add_widget(WifiScreen(name="wifi"))
 
 if(getUserPrefs('lockScreenDisabled') == '1'):
     sm.current = 'home'
