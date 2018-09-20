@@ -1455,8 +1455,6 @@ class SettingsPage(BoxLayout):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
-        sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
-        sm.current = 'wifi'
         if (self.selectedSetting == 'Wifi'):
             sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
             sm.current = 'wifi'
