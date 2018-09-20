@@ -1034,12 +1034,12 @@ class WifiScreen(Screen):
         super(WifiScreen, self).__init__(**kwargs)
         self.title = 'Enter Wifi Password'
         self.wifiName = wifiName
-        layout = StackLayout()
-        layout.add_widget(Label(text='Enter Wifi Password: ' + self.wifiName, size_hint =(0.33,0.7)))
-        self.pw = Label(text='', size_hint =(0.33,0.7))
+        layout = BoxLayout(orientation="vertical")
+        layout.add_widget(Label(text='Enter Wifi Password: ' + self.wifiName, size_hint =(1,0.2)))
+        self.pw = Label(text='', size_hint =(1,0.2))
         self.userInput = ''
         layout.add_widget(self.pw)
-        #layout.add_widget(Button(text="Back", size_hint =(0.33,0.7), on_press=self._keyboard_close))
+        layout.add_widget(Button(text="Back", size_hint =(1,0.2), on_press=self.closeScreen))
         self.add_widget(layout)
 
         self._keyboard = None
@@ -1065,6 +1065,10 @@ class WifiScreen(Screen):
         self.userInput = self.userInput[:-1]
         self.pw.text =  self.pw.text[:-1]
         return
+
+    def closeScreen(self,button):
+        Window.release_all_keyboards()
+        sm.current = 'home'
 
     def _keyboard_close(self, *args):
         """ The active keyboard is being closed. """
@@ -1092,7 +1096,7 @@ class WifiScreen(Screen):
             return
 
         if keycode == 'enter':
-            Connect(self.wifiName, self.userInput)
+            self.Connect(self.wifiName, self.userInput)
             Window.release_all_keyboards()
             sm.current = 'home'
             return
