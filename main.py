@@ -399,8 +399,6 @@ def serverRunning():
 
 #Initialize token data 0 being that we are not linking a new account
 initToken(0)
-if (sRefreshToken is None):
-    startHandler()
 
 #Loop on seprate thread to refresh token every 600 seconds and update Local progress of music playback
 def mainThread():
@@ -1069,7 +1067,6 @@ class WifiScreen(Screen):
     def closeScreen(self):
         Window.release_all_keyboards()
         sm.current = 'home'
-        sm.remove_screen(sm.get_screen('wifi'))
 
     def _keyboard_close(self, *args):
         """ The active keyboard is being closed. """
@@ -1111,7 +1108,6 @@ class WifiScreen(Screen):
             return
 
         if keycode == 'escape':
-            Window.release_all_keyboards()
             self.closeScreen()
             return
         # system keyboard keycode: (122, 'z')
@@ -1455,6 +1451,8 @@ class SettingsPage(BoxLayout):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
+        sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
+        sm.current = 'wifi'
         if (self.selectedSetting == 'Wifi'):
             sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
             sm.current = 'wifi'
