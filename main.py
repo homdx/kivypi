@@ -1383,6 +1383,7 @@ class SettingsPage(BoxLayout):
             return
         
         if (settingType == 'Choose Backup Playlist'):
+            print(playlistDict)
             self.populate(playlistDict)
             self.selectedSetting = settingType
             return
@@ -1397,6 +1398,14 @@ class SettingsPage(BoxLayout):
             return
         if (settingType == 'Wifi'):
             print(self.Search())
+            wifiDict = {}
+            for item in self.Search():
+                id = 0
+                print (item)
+                print (item['ssid'])
+                wifiDict[item['ssid'].encode('utf-8')] = id.encode('utf-8')
+                id = id+1
+            print (wifiDict)
             #self.populate(self.Search())
             self.selectedSetting = settingType
             return
