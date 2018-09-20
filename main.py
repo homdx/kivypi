@@ -1249,9 +1249,9 @@ class SettingsPage(BoxLayout):
         self.name = name
         self.entry = ''
         self.display.text = ''
-        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist'}
+        self.settingsDict = {'Choose Cast Device','Choose Backup Playlist', 'Disable Lock Screen'}
         if LINUX:
-            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist', 'Wifi'}
+            self.settingsDict = {'Choose Cast Device','Choose Backup Playlist', 'Disable Lock Screen', 'Wifi'}
         self.populate(self.settingsDict)
         self.selectedSetting = ''
 
@@ -1380,11 +1380,19 @@ class SettingsPage(BoxLayout):
 
         if (settingType == 'Link Spotify'):
             newUserToken()
-
             return
         
         if (settingType == 'Choose Backup Playlist'):
             self.populate(playlistDict)
+            self.selectedSetting = settingType
+            return
+        if (settingType == 'Disable Lock Screen'):
+            if (getUserPrefs('lockScreenDisabled') == '1'):
+                setUserPrefs('lockScreenDisabled', '0')
+                messageQueue.put('Lock screen reenabled')
+            else:
+                setUserPrefs('lockScreenDisabled', '1')
+                messageQueue.put('Lock screen disabled')
             self.selectedSetting = settingType
             return
         if (settingType == 'Wifi'):
@@ -1485,9 +1493,7 @@ class LockScreen(Screen):
         self.displayText = ''
 
 # Create the screen manager
-print ("Before SM")
 sm = ScreenManager()
-print ("After SM")
 sm.add_widget(LockScreen(name='lock'))
 sm.add_widget(HomeScreen(name='home'))
 sm.add_widget(HomeScreen2(name='home2'))
@@ -1496,6 +1502,9 @@ sm.add_widget(PlaylistScreen(name='playlists'))
 sm.add_widget(DevicesScreen(name='devices'))
 sm.add_widget(SettingsScreen(name='settings'))
 sm.add_widget(KeyboardScreen(name="keyboard"))
+
+if(getUserPrefs('lockScreenDisabled') == '1'):
+    sm.current = 'home'
 
 #Start thread after start
 main = threading.Thread(target = mainThread)
