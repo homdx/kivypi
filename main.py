@@ -1402,8 +1402,8 @@ class SettingsPage(BoxLayout):
             for item in self.Search():
                 id = 0
                 print (item)
-                print (item['ssid'])
-                wifiDict[item['ssid'].encode('utf-8')] = id
+                print (item.ssid)
+                wifiDict[item.ssid] = id
                 id = id+1
             print (wifiDict)
             self.populate(wifiDict)
