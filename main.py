@@ -1035,11 +1035,11 @@ class WifiScreen(Screen):
         self.title = 'Enter Wifi Password'
         self.wifiName = wifiName
         layout = BoxLayout(orientation="vertical")
-        layout.add_widget(Label(text='Enter Wifi Password: ' + self.wifiName, size_hint =(1,0.2)))
-        self.pw = Label(text='', size_hint =(1,0.2))
+        layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreen))
+        self.pw = Label(text='',)
         self.userInput = ''
         layout.add_widget(self.pw)
-        layout.add_widget(Button(text="Back", size_hint =(1,0.2), on_press=self.closeScreen))
+        layout.add_widget(Button(text="Back", on_press=self.closeScreen))
         self.add_widget(layout)
 
         self._keyboard = None
@@ -1079,7 +1079,7 @@ class WifiScreen(Screen):
 
     def key_down(self, keyboard, keycode, text, modifiers):
         """ The callback function that catches keyboard events. """
-        print (keycode)
+        return
 
     # def key_up(self, keyboard, keycode):
     def key_up(self, keyboard, keycode, *args):
@@ -1093,6 +1093,10 @@ class WifiScreen(Screen):
 
         if keycode == 'backspace':
             self.deleteInput()
+            return
+
+        if keycode == 'capslock' or keycode == 'shift' or keycode == 'layout' or keycode == 'tab':
+            print('retuning')
             return
 
         if keycode == 'enter':
@@ -1109,6 +1113,24 @@ class WifiScreen(Screen):
         # dock keyboard keycode: 'z'
 
         self.updateInput(keycode)
+
+    def FindFromSearchList(self, ssid):
+        wifilist = self.Search()
+
+        for cell in wifilist:
+            if cell.ssid == ssid:
+                return cell
+
+        return False
+
+
+    def FindFromSavedList(self, ssid):
+        cell = wifi.Scheme.find('wlan0', ssid)
+
+        if cell:
+            return cell
+
+        return False
 
     def Connect(self, ssid, password=None):
         cell = self.FindFromSearchList(ssid)
@@ -1149,6 +1171,27 @@ class WifiScreen(Screen):
 
                     return cell
         
+        return False
+
+    def Add(self, cell, password=None):
+        if not cell:
+            return False
+
+        scheme = wifi.Scheme.for_cell('wlan0', cell.ssid, cell, password)
+        scheme.save()
+        return scheme
+
+
+    def Delete(self, ssid):
+        if not ssid:
+            return False
+
+        cell = self.FindFromSavedList(ssid)
+
+        if cell:
+            cell.delete()
+            return True
+
         return False
 
 class VolumePopup(Popup):
@@ -1392,86 +1435,6 @@ class SettingsPage(BoxLayout):
             wifilist.append(cell)
 
         return wifilist
-
-    def FindFromSearchList(self, ssid):
-        wifilist = self.Search()
-
-        for cell in wifilist:
-            if cell.ssid == ssid:
-                return cell
-
-        return False
-
-
-    def FindFromSavedList(self, ssid):
-        cell = wifi.Scheme.find('wlan0', ssid)
-
-        if cell:
-            return cell
-
-        return False
-
-    def Connect(self, ssid, password=None):
-        cell = self.FindFromSearchList(ssid)
-
-        if cell:
-            savedcell = self.FindFromSavedList(cell.ssid)
-
-            # Already Saved from Setting
-            if savedcell:
-                savedcell.activate()
-                return cell
-
-            # First time to conenct
-            else:
-                if cell.encrypted:
-                    if password:
-                        scheme = self.Add(cell, password)
-
-                        try:
-                            scheme.activate()
-
-                        # Wrong Password
-                        except wifi.exceptions.ConnectionError:
-                            self.Delete(ssid)
-                            return False
-
-                        return cell
-                    else:
-                        return False
-                else:
-                    scheme = self.Add(cell)
-
-                    try:
-                        scheme.activate()
-                    except wifi.exceptions.ConnectionError:
-                        self.Delete(ssid)
-                        return False
-
-                    return cell
-        
-        return False
-
-    def Add(self, cell, password=None):
-        if not cell:
-            return False
-
-        scheme = wifi.Scheme.for_cell('wlan0', cell.ssid, cell, password)
-        scheme.save()
-        return scheme
-
-
-    def Delete(self, ssid):
-        if not ssid:
-            return False
-
-        cell = self.FindFromSavedList(ssid)
-
-        if cell:
-            cell.delete()
-            return True
-
-        return False
 
     def populate(self, listDict):
         self.rv.data = [{'value': x} for x in listDict]
