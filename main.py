@@ -1101,7 +1101,11 @@ class WifiScreen(Screen):
             return
 
         if keycode == 'enter':
-            if (not self.Connect(self.wifiName, self.userInput)):
+            try:
+                if (not self.Connect(self.wifiName, self.userInput)):
+                    messageQueue.put('Unable to connect to network: ' + self.wifiName)
+            except Exception as e:
+                print (e.message)
                 messageQueue.put('Unable to connect to network: ' + self.wifiName)
             self.closeScreen()
             return
