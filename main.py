@@ -1032,8 +1032,6 @@ class WifiScreen(Screen):
     def __init__(self, **kwargs):
         super(WifiScreen, self).__init__(**kwargs)
         self.title = 'Enter Wifi Password'
-        global wifiName
-        self.wifiName = wifiName
         layout = BoxLayout(orientation="vertical")
         layout.add_widget(Button(text='Enter Wifi Password: ' + self.wifiName, on_press=self.closeScreen))
         self.pw = Label(text='',)
@@ -1045,6 +1043,8 @@ class WifiScreen(Screen):
         self._keyboard = None
 
     def set_layout(self, layout):
+        global wifiName
+        self.wifiName = wifiName
         kb = Window.request_keyboard(
             self._keyboard_close, self)
         if kb.widget:
