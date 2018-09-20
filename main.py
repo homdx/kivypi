@@ -1028,22 +1028,83 @@ class DebugPopup(Popup):
             print("unable to checkout branch: " + e.message)
             messageQueue.put('Unable to checkout branch')
 
-class WifiPopup(Popup):
-    def __init__(self,screen, wifiName,**kwargs):
-        super(WifiPopup,self, wifiName).__init__(**kwargs)
-        self.screen = screen
-        self.size_hint = (.6, .6)
+class WifiScreen(Screen):
+
+    def __init__(self, wifiName, **kwargs):
+        super(WifiScreen, self).__init__(**kwargs)
         self.title = 'Enter Wifi Password'
         self.wifiName = wifiName
-        layout = BoxLayout(spacing=10, orientation="vertical")
-        layout.add_widget(Label(text=wifiName))
-        layout.add_widget(Label(text='test'))
-        layout.add_widget(Button(text="Connect", on_press=self.Login))
+        layout = StackLayout()
+        layout.add_widget(Label(text='Enter Wifi Password: ' + self.wifiName, size_hint =(0.33,0.7)))
+        self.pw = Label(text='', size_hint =(0.33,0.7))
+        self.userInput = ''
+        layout.add_widget(self.pw)
+        #layout.add_widget(Button(text="Back", size_hint =(0.33,0.7), on_press=self._keyboard_close))
         self.add_widget(layout)
 
-    def Login(self, button):
-        print ('here')
-        #Connect(self.wifiName, 'test')
+        self._keyboard = None
+        kb = Window.request_keyboard(
+            self._keyboard_close, self)
+        if kb.widget:
+            # If the current configuration supports Virtual Keyboards, this
+            # widget will be a kivy.uix.vkeyboard.VKeyboard instance.
+            self._keyboard = kb.widget
+            self._keyboard.layout = 'qwerty'
+        else:
+            self._keyboard = kb
+
+        self._keyboard.bind(on_key_down=self.key_down,
+                            on_key_up=self.key_up)
+
+    def updateInput(self, input):
+        self.userInput = self.userInput + input
+        self.pw.text =  self.pw.text + '*'
+        return
+
+    def deleteInput(self):
+        self.userInput = self.userInput[:-1]
+        self.pw.text =  self.pw.text[:-1]
+        return
+
+    def _keyboard_close(self, *args):
+        """ The active keyboard is being closed. """
+        if self._keyboard:
+            self._keyboard.unbind(on_key_down=self.key_down)
+            self._keyboard.unbind(on_key_up=self.key_up)
+            self._keyboard = None
+
+    def key_down(self, keyboard, keycode, text, modifiers):
+        """ The callback function that catches keyboard events. """
+        print (keycode)
+
+    # def key_up(self, keyboard, keycode):
+    def key_up(self, keyboard, keycode, *args):
+        """ The callback function that catches keyboard events. """
+        if keycode == None:
+            print('none')
+            return
+        
+        if isinstance(keycode, tuple):
+            keycode = keycode[1]
+
+        if keycode == 'backspace':
+            self.deleteInput()
+            return
+
+        if keycode == 'enter':
+            Connect(self.wifiName, self.userInput)
+            Window.release_all_keyboards()
+            sm.current = 'home'
+            return
+
+        if keycode == 'escape':
+            Window.release_all_keyboards()
+            sm.current = 'home'
+            return
+        # system keyboard keycode: (122, 'z')
+        # dock keyboard keycode: 'z'
+
+        self.updateInput(keycode)
 
     def Connect(self, ssid, password=None):
         cell = self.FindFromSearchList(ssid)
@@ -1413,9 +1474,8 @@ class SettingsPage(BoxLayout):
 
     def setting(self, settingType):
         if (self.selectedSetting == 'Wifi'):
-            #Open popup and keyboard
-            WifiPopup(self, settingType).open()
-            print (settingType)
+            sm.add_widget(WifiScreen(name="wifi", wifiName=settingType))
+            sm.current = 'wifi'
             self.display.text = ''
             self.populate(self.settingsDict)
             self.selectedSetting = ''

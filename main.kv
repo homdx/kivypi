@@ -660,3 +660,17 @@
             size_hint_x: 0.33
             text: "Update"
             on_release: root.closeandUpdate()
+
+<WifiScreen>:
+    StackLayout:
+        orientation: "lr-tb"
+        spacing: 5
+        padding: 5
+        cols: 1
+        rows: 1
+        canvas.before:
+            Color:
+                rgb: utils.get_color_from_hex('#4C626C')
+            Rectangle:
+                pos: self.pos
+                size: self.size
