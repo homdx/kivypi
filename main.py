@@ -1028,6 +1028,63 @@ class DebugPopup(Popup):
             print("unable to checkout branch: " + e.message)
             messageQueue.put('Unable to checkout branch')
 
+class WifiPopup(Popup):
+    def __init__(self,screen, wifiName,**kwargs):
+        super(WifiPopup,self, wifiName).__init__(**kwargs)
+        self.screen = screen
+        self.size_hint = (.6, .6)
+        self.title = 'Enter Wifi Password'
+        self.wifiName = wifiName
+        layout = BoxLayout(spacing=10, orientation="vertical")
+        layout.add_widget(Label(text=wifiName))
+        layout.add_widget(Label(text='test'))
+        layout.add_widget(Button(text="Connect", on_press=self.Login))
+        self.add_widget(layout)
+
+    def Login(self, button):
+        print ('here')
+        #Connect(self.wifiName, 'test')
+
+    def Connect(self, ssid, password=None):
+        cell = self.FindFromSearchList(ssid)
+
+        if cell:
+            savedcell = self.FindFromSavedList(cell.ssid)
+
+            # Already Saved from Setting
+            if savedcell:
+                savedcell.activate()
+                return cell
+
+            # First time to conenct
+            else:
+                if cell.encrypted:
+                    if password:
+                        scheme = self.Add(cell, password)
+
+                        try:
+                            scheme.activate()
+
+                        # Wrong Password
+                        except wifi.exceptions.ConnectionError:
+                            self.Delete(ssid)
+                            return False
+
+                        return cell
+                    else:
+                        return False
+                else:
+                    scheme = self.Add(cell)
+
+                    try:
+                        scheme.activate()
+                    except wifi.exceptions.ConnectionError:
+                        self.Delete(ssid)
+                        return False
+
+                    return cell
+        
+        return False
 
 class VolumePopup(Popup):
 
@@ -1355,6 +1412,15 @@ class SettingsPage(BoxLayout):
         self.rv.data = [{'value': x} for x in listDict]
 
     def setting(self, settingType):
+        if (self.selectedSetting == 'Wifi'):
+            #Open popup and keyboard
+
+            print (settingType)
+            self.display.text = ''
+            self.populate(self.settingsDict)
+            self.selectedSetting = ''
+            return
+
         if (self.selectedSetting == 'Cast'):
             setUserPrefs('favoriteCastDevice', settingType)
             self.display.text = ''
@@ -1399,10 +1465,8 @@ class SettingsPage(BoxLayout):
         if (settingType == 'Wifi'):
             print(self.Search())
             wifiDict = {}
+            id = 0
             for item in self.Search():
-                id = 0
-                print (item)
-                print (item.ssid)
                 wifiDict[item.ssid] = id
                 id = id+1
             print (wifiDict)
