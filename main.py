@@ -1414,7 +1414,7 @@ class SettingsPage(BoxLayout):
     def setting(self, settingType):
         if (self.selectedSetting == 'Wifi'):
             #Open popup and keyboard
-
+            WifiPopup(self, settingType).open()
             print (settingType)
             self.display.text = ''
             self.populate(self.settingsDict)
